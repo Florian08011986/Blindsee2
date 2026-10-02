@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>City Immersive Tour</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- On-Screen Live Debugging Overlay for API key restrictions and Maps/script errors -->
+    <div id="error-console" style="display:none; position:fixed; bottom:12px; left:12px; right:12px; max-height:200px; overflow-y:auto; background-color:rgba(15,23,42,0.95); border:1px solid rgba(239,68,68,0.4); border-radius:8px; padding:12px; z-index:99999; font-family:monospace; font-size:11px; color:#fca5a5; box-shadow:0 10px 15px -3px rgba(0,0,0,0.5);">
+      <div style="font-weight:bold; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+        <span>⚠️ Live API Diagnostician (Overlay)</span>
+        <button onclick="document.getElementById('error-console').style.display='none'" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:12px; margin-left:auto;">✕</button>
+      </div>
+      <div id="error-console-messages" style="white-space:pre-wrap; line-height:1.4;"></div>
+    </div>
+
+    <script>
+      (function() {
+        const consoleEl = document.getElementById('error-console');
+        const msgsEl = document.getElementById('error-console-messages');
+        
+        function appendError(msg, url, line) {
+          if (!consoleEl || !msgsEl) return;
+          consoleEl.style.display = 'block';
+          const cleanMsg = msg ? msg.toString() : 'Unknown script or dynamic resource error';
+          const p = document.createElement('div');
+          p.style.marginBottom = '4px';
+          p.innerText = '[' + new Date().toLocaleTimeString() + '] ' + cleanMsg + (line ? ' (Line: ' + line + ')' : '');
+          msgsEl.appendChild(p);
+        }
+
+        window.addEventListener('error', function(event) {
+          // Exclude benign errors
+          if (event.message && (event.message.includes('vite') || event.message.includes('hmr') || event.message.includes('WebSocket'))) {
+            return;
+          }
+          appendError(event.message, event.filename, event.lineno);
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+          const reason = event.reason ? (event.reason.message || event.reason) : 'Unhandled promise rejection';
+          if (reason && (reason.toString().includes('vite') || reason.toString().includes('hmr'))) {
+            return;
+          }
+          appendError('Promise Rejection: ' + reason);
+        });
+      })();
+    </script>
+  </body>
+</html>
+
