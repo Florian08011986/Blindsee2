@@ -1,6 +1,6 @@
 {
-  "name": "Remix City Immersive Tour",
-  "description": "Interactive Google Maps 3D visualization of San Francisco featuring custom cinematic fly-to paths, adjustable speeds, and interactive annotations.",
+  "name": "Kroatien Reisebegleiter",
+  "description": "Interaktive fotorealistische 3D-Erkundung Kroatiens mit Adriaküsten-Panoramen, historischen UNESCO-Städten, Nationalparks, Seen und familienfreundlichen Attraktionen.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

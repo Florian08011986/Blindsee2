@@ -1,18 +1,15 @@
 import {
   CITIES,
-  LANDMARKS_SAN_FRANCISCO,
-  LANDMARKS_TOKYO,
-  LANDMARKS_PARIS,
-  LANDMARKS_ROME,
-  LANDMARKS_NEW_YORK,
-  LANDMARKS_LONDON,
-  LANDMARKS_BARCELONA,
-  LANDMARKS_SYDNEY,
-  LANDMARKS_AMSTERDAM,
-  LANDMARKS_SINGAPORE,
-  LANDMARKS_VENICE,
-  LANDMARKS_FLORENCE,
-  LANDMARKS_RIO_DE_JANEIRO
+  LANDMARKS_DUBROVNIK,
+  LANDMARKS_SPLIT,
+  LANDMARKS_PLITVICE,
+  LANDMARKS_ZADAR,
+  LANDMARKS_ROVINJ,
+  LANDMARKS_PULA,
+  LANDMARKS_ZAGREB,
+  LANDMARKS_SIBENIK,
+  LANDMARKS_HVAR,
+  LANDMARKS_MAKARSKA
 } from './landmarksData';
 
 export interface Landmark {
@@ -38,7 +35,36 @@ export interface Landmark {
   glyph?: string;
   svgIcon?: string;
   altitudeMode?: 'RELATIVE_TO_GROUND' | 'RELATIVE_TO_MESH' | 'ABSOLUTE';
+  openingHours?: string;
+  prices?: string;
+  contact?: string;
+  fuelPrices?: { super95: string; diesel: string; lpg?: string };
+  cityId?: string;
+  distanceKm?: number;
 }
+
+export interface FilterCategoryItem {
+  id: string;
+  label: string;
+  glyph: string;
+  color: string;
+  description: string;
+}
+
+export const FILTER_CATEGORIES: FilterCategoryItem[] = [
+  { id: 'Sehenswürdigkeiten', label: 'Sehenswürdigkeiten', glyph: '🏛️', color: '#D97706', description: 'Historische Bauten & UNESCO-Stätten' },
+  { id: 'Attraktionen', label: 'Attraktionen', glyph: '🎡', color: '#7C3AED', description: 'Aussichtspunkte, Skywalk & Panoramen' },
+  { id: 'Denkmäler & Kultur', label: 'Denkmäler & Kultur', glyph: '🗿', color: '#B45309', description: 'Denkmäler, Kathedralen & Statuen' },
+  { id: 'Seen & Gewässer', label: 'Seen & Gewässer', glyph: '💧', color: '#0284C7', description: 'Nationalparks, Seen & Wasserfälle' },
+  { id: 'Berge', label: 'Berge & Gipfel', glyph: '⛰️', color: '#16A34A', description: 'Gipfel, Gebirge & Panoramagrate' },
+  { id: 'Strände', label: 'Strände', glyph: '🏖️', color: '#06B6D4', description: 'Kies-, Sand- & Klippenstrände' },
+  { id: 'Freizeitparks', label: 'Freizeitparks', glyph: '🎢', color: '#EC4899', description: 'Aquaparks, Dinoparks & Erlebnisse' },
+  { id: 'Schwimmbäder & Thermen', label: 'Schwimmbäder & Thermen', glyph: '🏊', color: '#0EA5E9', description: 'Thermalbäder & Schwimmbäder' },
+  { id: 'Tankstellen', label: 'Tankstellen', glyph: '⛽', color: '#E11D48', description: 'Spritpreise & 24h-Stationen' },
+  { id: 'Krankenhäuser', label: 'Krankenhäuser', glyph: '🏥', color: '#DC2626', description: 'Kliniken & Notaufnahmen (24/7)' },
+  { id: 'Apotheken', label: 'Apotheken', glyph: '💊', color: '#10B981', description: 'Apotheken & Notdienstzeiten' },
+  { id: 'Polizeireviere', label: 'Polizeireviere', glyph: '👮', color: '#3B82F6', description: 'Polizeistationen & Notruf 192' },
+];
 
 export interface CityConfig {
   id: string;
@@ -64,25 +90,29 @@ export interface CityConfig {
 
 // Default base altitude offset relative to the 3D mesh (meters)
 export const DEFAULT_MESH_ALTITUDE = 12;
-export const DEFAULT_GROUND_ALTITUDE = 40;
+export const DEFAULT_GROUND_ALTITUDE = 35;
+
+/**
+ * Überprüft, ob sich gegebene Koordinaten innerhalb des kroatischen Staatsgebiets befinden.
+ */
+export function isLocationInCroatia(lat: number, lng: number): boolean {
+  if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return false;
+  // Kroatien Breitengrade ca. 42.2°N bis 46.65°N, Längengrade ca. 13.4°E bis 19.55°E
+  return lat >= 42.2 && lat <= 46.65 && lng >= 13.4 && lng <= 19.55;
+}
+
+// Subtile Willkommens-Kameraperspektive über der kroatischen Adriaküste (Blick entlang der Kornaten/Dalmatien)
+export const CROATIA_COASTAL_WELCOME_CAMERA = {
+  center: { lat: 43.85, lng: 15.35, altitude: 42000 },
+  range: 85000,
+  tilt: 58,
+  heading: 142
+};
 
 /**
  * Computes marker altitude.
- * - For RELATIVE_TO_MESH (default for landmarks atop 3D photorealistic building/terrain mesh):
- *   places marker cleanly right above the structure with a 10-15m clearance.
- * - For RELATIVE_TO_GROUND (e.g. Ferry Building):
- *   anchors marker at fixed elevation above ground level.
  */
 export function getLandmarkMarkerAltitude(loc: Landmark): number {
-  const isGround = loc.altitudeMode === 'RELATIVE_TO_GROUND' || loc.id === 'ferry-building';
-  
-  if (isGround) {
-    if (loc.markerAltitude !== undefined) return loc.markerAltitude;
-    if (loc.altitude !== undefined && loc.altitude > 0) return loc.altitude;
-    return DEFAULT_GROUND_ALTITUDE;
-  }
-
-  // Mesh relative mode: place marker right above the top of the 3D structure/mesh
   if (loc.markerAltitude !== undefined) {
     return loc.markerAltitude;
   }
@@ -92,22 +122,19 @@ export function getLandmarkMarkerAltitude(loc: Landmark): number {
 // Re-export landmarks & cities
 export {
   CITIES,
-  LANDMARKS_SAN_FRANCISCO,
-  LANDMARKS_TOKYO,
-  LANDMARKS_PARIS,
-  LANDMARKS_ROME,
-  LANDMARKS_NEW_YORK,
-  LANDMARKS_LONDON,
-  LANDMARKS_BARCELONA,
-  LANDMARKS_SYDNEY,
-  LANDMARKS_AMSTERDAM,
-  LANDMARKS_SINGAPORE,
-  LANDMARKS_VENICE,
-  LANDMARKS_FLORENCE,
-  LANDMARKS_RIO_DE_JANEIRO
+  LANDMARKS_DUBROVNIK,
+  LANDMARKS_SPLIT,
+  LANDMARKS_PLITVICE,
+  LANDMARKS_ZADAR,
+  LANDMARKS_ROVINJ,
+  LANDMARKS_PULA,
+  LANDMARKS_ZAGREB,
+  LANDMARKS_SIBENIK,
+  LANDMARKS_HVAR,
+  LANDMARKS_MAKARSKA
 };
 
-export const DEFAULT_CITY_ID = 'san-francisco';
+export const DEFAULT_CITY_ID = 'dubrovnik';
 
 export function getCityConfig(cityId: string): CityConfig {
   const found = CITIES.find((c) => c.id === cityId);
@@ -115,7 +142,7 @@ export function getCityConfig(cityId: string): CityConfig {
 }
 
 // Backward-compatibility export
-export const LANDMARKS = LANDMARKS_SAN_FRANCISCO;
+export const LANDMARKS = LANDMARKS_DUBROVNIK;
 
 /**
  * Calculates the geodesic distance in kilometers between two lat/lng coordinates
@@ -229,6 +256,11 @@ export function loadGoogleMapsScript(apiKey: string): Promise<any> {
     return Promise.resolve((window as any).google);
   }
 
+  const cleanKey = apiKey ? apiKey.trim() : '';
+  if (!cleanKey || cleanKey === 'MY_GOOGLE_MAPS_PLATFORM_KEY' || cleanKey === 'YOUR_API_KEY') {
+    return Promise.reject(new Error("No valid Google Maps API Key provided."));
+  }
+
   if (mapsLoadingPromise) {
     return mapsLoadingPromise;
   }
@@ -245,7 +277,10 @@ export function loadGoogleMapsScript(apiKey: string): Promise<any> {
         resolve((window as any).google);
       };
       existingScript.addEventListener('load', () => resolve((window as any).google));
-      existingScript.addEventListener('error', (err) => reject(err));
+      existingScript.addEventListener('error', (err) => {
+        mapsLoadingPromise = null;
+        reject(err);
+      });
     });
     return mapsLoadingPromise;
   }
@@ -258,13 +293,24 @@ export function loadGoogleMapsScript(apiKey: string): Promise<any> {
 
     const script = document.createElement('script');
     script.id = 'google-maps-3d-script';
-    // Load Google Maps JavaScript API with alpha channel for 3D maps and solution_channel attribution
-    const keyParam = apiKey && apiKey.trim() !== '' ? `key=${encodeURIComponent(apiKey.trim())}&` : '';
-    script.src = `https://maps.googleapis.com/maps/api/js?${keyParam}v=alpha&libraries=maps3d,places,marker,maps&solution_channel=gmp_mcp_codeassist_v1_aistudio&callback=__googleMaps3DLoaded`;
+    // Load Google Maps JavaScript API with alpha channel for 3D maps and solution_channel attribution (in German)
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(cleanKey)}&v=alpha&libraries=maps3d,places,marker,maps&language=de&region=HR&solution_channel=gmp_mcp_codeassist_v1_aistudio&callback=__googleMaps3DLoaded`;
     script.async = true;
     script.defer = true;
+
+    // Gracefully catch auth failures without triggering uncaught global script error
+    if (typeof window !== 'undefined') {
+      const prevAuth = (window as any).gm_authFailure;
+      (window as any).gm_authFailure = () => {
+        console.warn("Google Maps authentication warning - fallback active.");
+        if (typeof prevAuth === 'function') {
+          try { prevAuth(); } catch (e) {}
+        }
+      };
+    }
+
     script.onerror = (err) => {
-      console.error("Google Maps 3D Script failed to load", err);
+      console.warn("Google Maps 3D Script load warning", err);
       mapsLoadingPromise = null; // Reset on failure so we can retry on next request
       reject(err);
     };
