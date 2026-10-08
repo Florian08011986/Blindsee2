@@ -118,18 +118,6 @@ export default function App() {
   const [keyInputValue, setKeyInputValue] = useState<string>('');
   const [geminiKeyInput, setGeminiKeyInput] = useState<string>('');
   const [hasGeminiKey, setHasGeminiKey] = useState<boolean>(() => getStoredGeminiKey() !== '');
-
-  // Erststart: Schlüssel-Dialog einmalig automatisch öffnen, damit der KI-Chat sofort eingerichtet werden kann
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem('onboarding_v1') && getStoredGeminiKey() === '') {
-        setShowApiKeyModal(true);
-      }
-      localStorage.setItem('onboarding_v1', '1');
-    } catch {
-      /* localStorage nicht verfügbar: ignorieren */
-    }
-  }, []);
   const [mapsLoaded, setMapsLoaded] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -384,7 +372,7 @@ export default function App() {
   // =========================================================================
   const handleUseGeolocation = () => {
     if (!navigator.geolocation) {
-      alert('Standortermittlung wird von diesem Browser nicht unterstützt.');
+      setFlightStatus('Standortermittlung wird von diesem Browser nicht unterstützt.');
       return;
     }
 
@@ -416,7 +404,7 @@ export default function App() {
         setIsLocating(false);
         console.warn('Geolocation error:', err);
         // Fallback to Split
-        alert('Standort konnte nicht ermittelt werden. Bleibe bei Dalmatien/Split.');
+        setFlightStatus('Standort nicht ermittelt — Dalmatien/Split aktiv');
       },
       { timeout: 10000, enableHighAccuracy: true }
     );

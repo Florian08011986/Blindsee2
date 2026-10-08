@@ -129,25 +129,20 @@ export function buildOfflineFallback(locationName: string, reason: string): stri
   );
 }
 
-/** Orchestrierung: lokaler Schlüssel → Backend → Offline-Fallback. */
+/** Orchestrierung: Server-Backend (/api/gemini) → lokaler Schlüssel → Offline-Fallback. */
 export async function askGemini(req: GeminiRequest): Promise<string> {
-  const key = getStoredGeminiKey();
-  if (key) {
-    try {
-      return await callGeminiDirect(key, req);
-    } catch (err: any) {
-      return buildOfflineFallback(req.location.name, `Gemini-Fehler: ${err?.message || 'unbekannt'}`);
-    }
-  }
-
   const baseUrl = ((import.meta as any).env?.VITE_API_BASE_URL ?? '').toString().trim();
-  if (baseUrl) {
-    try {
-      return await callBackend(baseUrl, req);
-    } catch (err: any) {
-      return buildOfflineFallback(req.location.name, `Backend nicht erreichbar: ${err?.message || 'unbekannt'}`);
+  try {
+    return await callBackend(baseUrl, req);
+  } catch (backendErr: any) {
+    const key = getStoredGeminiKey();
+    if (key) {
+      try {
+        return await callGeminiDirect(key, req);
+      } catch (err: any) {
+        return buildOfflineFallback(req.location.name, `Gemini-Fehler: ${err?.message || 'unbekannt'}`);
+      }
     }
+    return buildOfflineFallback(req.location.name, `Backend nicht erreichbar: ${backendErr?.message || 'unbekannt'}`);
   }
-
-  return buildOfflineFallback(req.location.name, 'kein Gemini-Schlüssel hinterlegt');
 }

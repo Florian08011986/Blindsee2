@@ -1,8 +1,16 @@
 import 'react';
 
 declare module 'react' {
-  interface JSX {
-    IntrinsicElements: {
+  namespace JSX {
+    interface IntrinsicElements {
+      'gmp-map-3d': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        mode?: string;
+        heading?: number | string;
+        tilt?: number | string;
+        range?: number | string;
+        center?: any;
+        ref?: any;
+      };
       'gmp-map': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         zoom?: string | number;
         'map-id'?: string;
@@ -36,6 +44,7 @@ declare module 'react' {
         'light-scheme-color'?: string;
         'dark-scheme-color'?: string;
       };
-    };
+    }
   }
 }
+
