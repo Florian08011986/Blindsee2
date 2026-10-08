@@ -13,7 +13,7 @@ const ai = apiKey ? new GoogleGenAI({ apiKey }) : new GoogleGenAI();
 // Endpoint for Gemini Chat in Croatia Travel Guide
 app.post('/api/gemini', async (req, res) => {
   try {
-    const { prompt, location, category, history, userName, assistantName } = req.body;
+    const { prompt, location, category, history, userName, assistantName, ragContext } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt ist erforderlich.' });
@@ -31,15 +31,17 @@ Deine Aufgaben:
 5. Halte Antworten klar strukturiert, einladend und formatiere wichtige Namen und Orte gut lesbar mit Markdown.
 
 AKTIONEN FÜR DIE APP:
-Du kannst die 3D-Kartenansicht der App direkt steuern, indem du am Ende deiner Nachricht einen dieser Tags setzt:
+Du kannst die 3D-Kartenansicht und Werkzeuge der App direkt steuern, indem du am Ende deiner Nachricht einen dieser Tags setzt:
 - [ACTION:OPEN_HELP] wenn ${user} fragt "Hilf mir mit deinen Funktionen", nach Hilfe fragt oder deine Fähigkeiten kennenlernen will.
-- [ACTION:FLY_TO:Ortname] (z.B. [ACTION:FLY_TO:Dubrovnik], [ACTION:FLY_TO:Split], [ACTION:FLY_TO:Rovinj], [ACTION:FLY_TO:Zadar], [ACTION:FLY_TO:Pula], [ACTION:FLY_TO:Krka])
+- [ACTION:OPEN_MEMORY] wenn ${user} fragt "Zeige mein Gedächtnis", wissen will was du dir gemerkt hast oder das Gedächtnis einsehen will.
+- [ACTION:REMEMBER:Text] wenn ${user} dich bittet, dir etwas Bestimmtes zu merken oder zu notieren (z.B. Hotelname, Vorlieben).
 - [ACTION:OPEN_PACKLIST] wenn ${user} die Tasche packen möchte oder nach der Packliste fragt.
+- [ACTION:FLY_TO:Ortname] (z.B. [ACTION:FLY_TO:Dubrovnik], [ACTION:FLY_TO:Split], [ACTION:FLY_TO:Rovinj], [ACTION:FLY_TO:Zadar], [ACTION:FLY_TO:Pula], [ACTION:FLY_TO:Krka])
 - [ACTION:START_TOUR] wenn ${user} eine 3D-Tour starten möchte.
 - [ACTION:MAP_MODE:satellite] oder [ACTION:MAP_MODE:3d]
 
 Aktueller Standort des Nutzers: ${location ? `${location.name || 'Kroatien'} (Lat: ${location.lat}, Lng: ${location.lng})` : 'Kroatien Küstenregion'}.
-Aktiver Filter: ${category || 'Alle'}.`;
+Aktiver Filter: ${category || 'Alle'}.${ragContext || ''}`;
 
     // Construct conversation contents
     const contents: any[] = [];

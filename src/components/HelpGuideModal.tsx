@@ -16,7 +16,8 @@ import {
   BookOpen,
   MapPin,
   Luggage,
-  Navigation
+  Navigation,
+  Brain
 } from 'lucide-react';
 
 interface HelpGuideModalProps {
@@ -27,6 +28,7 @@ interface HelpGuideModalProps {
   onRestartIntro: () => void;
   onOpenApiKeyModal: () => void;
   onOpenPacklist: () => void;
+  onOpenMemory: () => void;
 }
 
 export const HelpGuideModal: React.FC<HelpGuideModalProps> = ({
@@ -36,7 +38,8 @@ export const HelpGuideModal: React.FC<HelpGuideModalProps> = ({
   assistantName,
   onRestartIntro,
   onOpenApiKeyModal,
-  onOpenPacklist
+  onOpenPacklist,
+  onOpenMemory
 }) => {
   if (!isOpen) return null;
 
@@ -135,6 +138,13 @@ export const HelpGuideModal: React.FC<HelpGuideModalProps> = ({
                 <p className="text-[11px] text-slate-300 italic">„Nächster Tour-Stopp“</p>
               </div>
 
+              <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 space-y-1">
+                <span className="text-xs font-bold text-purple-300 block">🧠 Gemeinsames Gedächtnis (RAG)</span>
+                <p className="text-[11px] text-slate-300 italic">„Merke dir: Wir wohnen im Hotel Park Split“</p>
+                <p className="text-[11px] text-slate-300 italic">„Zeige mein Gedächtnis“</p>
+                <p className="text-[11px] text-slate-300 italic">„Welche Tipps hat Florian für mich?“</p>
+              </div>
+
               <div className="p-3 rounded-xl bg-slate-900/80 border border-white/10 space-y-1">
                 <span className="text-xs font-bold text-white block">🗺️ Kartenansicht wechseln</span>
                 <p className="text-[11px] text-slate-300 italic">„Schalte auf Satellitenkarte um“</p>
@@ -193,13 +203,24 @@ export const HelpGuideModal: React.FC<HelpGuideModalProps> = ({
           </div>
 
           {/* 5. Aktionen & Schnelleinstellungen */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+          <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button
+              onClick={() => {
+                onClose();
+                onOpenMemory();
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all cursor-pointer shadow-md"
+            >
+              <Brain className="w-4 h-4" />
+              <span>Gedächtnis (RAG) öffnen</span>
+            </button>
+
             <button
               onClick={() => {
                 onClose();
                 onOpenPacklist();
               }}
-              className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-all cursor-pointer shadow-md"
             >
               <Luggage className="w-4 h-4" />
               <span>Packliste öffnen</span>
@@ -210,7 +231,7 @@ export const HelpGuideModal: React.FC<HelpGuideModalProps> = ({
                 onClose();
                 onRestartIntro();
               }}
-              className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition-all cursor-pointer"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Namen &amp; Begrüßung neu starten</span>
@@ -221,7 +242,7 @@ export const HelpGuideModal: React.FC<HelpGuideModalProps> = ({
                 onClose();
                 onOpenApiKeyModal();
               }}
-              className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition-all cursor-pointer"
             >
               <Key className="w-4 h-4" />
               <span>API-Schlüssel</span>

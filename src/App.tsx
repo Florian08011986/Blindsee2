@@ -27,6 +27,7 @@ import { GeminiBottomChat } from './components/GeminiBottomChat';
 import { BlackScreenIntro } from './components/BlackScreenIntro';
 import { HelpGuideModal } from './components/HelpGuideModal';
 import { PacklistWidget } from './components/PacklistWidget';
+import { MemoryManagerModal } from './components/MemoryManagerModal';
 import { ALL_CROATIA_POIS, getPoisInRadius } from './croatiaLocations';
 import {
   Landmark,
@@ -106,6 +107,7 @@ export default function App() {
 
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
   const [showPacklist, setShowPacklist] = useState<boolean>(false);
+  const [showMemoryModal, setShowMemoryModal] = useState<boolean>(false);
   const [isChatInteracting, setIsChatInteracting] = useState<boolean>(false);
 
   // =========================================================================
@@ -674,6 +676,7 @@ export default function App() {
         }}
         onOpenPacklist={() => setShowPacklist(true)}
         onOpenHelp={() => setShowHelpModal(true)}
+        onOpenMemory={() => setShowMemoryModal(true)}
         onSetMapMode={(mode) => setMapMode(mode)}
         onStartTour={startTour3D}
         onInteractionChange={(interacting) => setIsChatInteracting(interacting)}
@@ -714,6 +717,10 @@ export default function App() {
           setShowHelpModal(false);
           setShowPacklist(true);
         }}
+        onOpenMemory={() => {
+          setShowHelpModal(false);
+          setShowMemoryModal(true);
+        }}
       />
 
       {/* 6. INTERAKTIVES PACKLISTEN-WIDGET FÜR KROATIEN */}
@@ -721,6 +728,14 @@ export default function App() {
         isOpen={showPacklist}
         onClose={() => setShowPacklist(false)}
         assistantName={assistantName}
+      />
+
+      {/* 7. GEMEINSAMES GEDÄCHTNIS (RAG-VEKTORSPEICHER) */}
+      <MemoryManagerModal
+        isOpen={showMemoryModal}
+        onClose={() => setShowMemoryModal(false)}
+        assistantName={assistantName}
+        userName={userName}
       />
 
       {/* 5. API KEY MODAL */}

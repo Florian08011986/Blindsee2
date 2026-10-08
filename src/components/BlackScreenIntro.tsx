@@ -5,7 +5,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, ArrowRight, Check, ChevronRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Check, ChevronRight, Luggage } from 'lucide-react';
+import { PacklistWidget } from './PacklistWidget';
 
 interface BlackScreenIntroProps {
   isOpen: boolean;
@@ -34,15 +35,17 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
       ? initialAssistantName
       : 'Luka'
   );
+  const [isPacklistExerciseOpen, setIsPacklistExerciseOpen] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
   const totalBeats = 16;
 
-  // Handles screen tap: advances to next beat if not on an input beat
+  // Handles screen tap: advances to next beat if not on an input beat or exercise modal
   const handleContainerClick = () => {
-    // Beat 5 and Beat 6 are inputs, Beat 15 is final
-    if (beat !== 5 && beat !== 6 && beat < totalBeats - 1) {
+    if (isPacklistExerciseOpen) return;
+    // Beat 5 and Beat 6 are inputs, Beat 11 has interactive buttons, Beat 15 is final
+    if (beat !== 5 && beat !== 6 && beat !== 11 && beat < totalBeats - 1) {
       setBeat((prev) => prev + 1);
     }
   };
@@ -387,7 +390,7 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
             </motion.div>
           )}
 
-          {/* Feature 4: Proaktive Packliste */}
+          {/* Feature 4: Proaktives Übungsbeispiel Packliste */}
           {beat === 11 && (
             <motion.div
               key="beat-11"
@@ -395,18 +398,43 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.4 }}
-              className="space-y-4"
+              className="space-y-4 max-w-md mx-auto"
             >
-              <span className="text-4xl block">🎒</span>
-              <span className="text-xs uppercase tracking-widest text-white/60 font-semibold block">
-                Funktion 4 • Proaktive Packliste
+              <span className="text-4xl block">🎒🇭🇷</span>
+              <span className="text-xs uppercase tracking-widest text-cyan-300 font-semibold block">
+                Funktion 4 • Proaktives Übungsbeispiel
               </span>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight leading-snug drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
-                Badeschuhe, Mautboxen &amp; Countdown.
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+                „Noch 48 Stunden bis zum Start. Wollen wir deine Tasche packen?“
               </h2>
-              <p className="text-sm sm:text-base font-light text-white/80 leading-relaxed max-w-md mx-auto">
-                Florian hat mir eine interaktive Checkliste hinterlegt. Ich erinnere dich an Badeschuhe für Seeigel, Maut (ENC) und wichtige Dokumente.
+              <p className="text-sm font-light text-white/80 leading-relaxed">
+                Florian hat mir deine interaktive Kroatien-Packliste übergeben (Badeschuhe gegen Seeigel, ENC-Maut, Dokumente).
+                Probieren wir es gleich als Übung aus!
               </p>
+
+              <div className="pt-2 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsPacklistExerciseOpen(true);
+                  }}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Luggage className="w-4 h-4" />
+                  <span>🎒 Ja, Packliste jetzt testen &amp; abhaken!</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBeat((b) => b + 1);
+                  }}
+                  className="py-1.5 px-3 text-xs text-white/60 hover:text-white transition-colors cursor-pointer"
+                >
+                  Weiter im Onboarding →
+                </button>
+              </div>
             </motion.div>
           )}
 
@@ -521,6 +549,13 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
           {beat + 1} / {totalBeats}
         </span>
       </div>
+
+      {/* Interaktives Übungs-Widget für die Packliste im Onboarding */}
+      <PacklistWidget
+        isOpen={isPacklistExerciseOpen}
+        onClose={() => setIsPacklistExerciseOpen(false)}
+        assistantName={assistantName}
+      />
     </div>
   );
 };

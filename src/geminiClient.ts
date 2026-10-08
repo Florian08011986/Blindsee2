@@ -9,6 +9,8 @@
  *              per Header an generativelanguage.googleapis.com gesendet.
  */
 
+import { formatRAGContextForPrompt } from './memoryRAG';
+
 export interface GeminiLocation {
   name: string;
   lat: number;
@@ -27,6 +29,7 @@ export interface GeminiRequest {
   history: GeminiHistoryItem[];
   userName?: string;
   assistantName?: string;
+  ragContext?: string;
 }
 
 export const GEMINI_KEY_STORAGE = 'gemini_api_key';
@@ -56,12 +59,13 @@ export function setStoredGeminiKey(key: string): void {
   }
 }
 
-/** Baut die System-Anweisung (inkl. Namen und Action-Tag-Steuerung). */
+/** Baut die System-Anweisung (inkl. Namen, RAG-Kontext und Action-Tag-Steuerung). */
 export function buildSystemInstruction(
   location: GeminiLocation,
   category?: string,
   userName?: string,
-  assistantName?: string
+  assistantName?: string,
+  ragContext?: string
 ): string {
   const user = userName || 'Florian';
   const assistant = assistantName || 'Luka';
@@ -75,15 +79,17 @@ Deine Aufgaben:
 5. Halte Antworten klar strukturiert, einladend und formatiere wichtige Namen und Orte gut lesbar mit Markdown.
 
 AKTIONEN FÜR DIE APP:
-Du kannst die 3D-Kartenansicht der App direkt steuern, indem du am Ende deiner Nachricht einen dieser Tags setzt:
+Du kannst die 3D-Kartenansicht und Werkzeuge der App direkt steuern, indem du am Ende deiner Nachricht einen dieser Tags setzt:
 - [ACTION:OPEN_HELP] wenn ${user} fragt "Hilf mir mit deinen Funktionen", nach Hilfe fragt oder deine Fähigkeiten kennenlernen will.
-- [ACTION:FLY_TO:Ortname] (z.B. [ACTION:FLY_TO:Dubrovnik], [ACTION:FLY_TO:Split], [ACTION:FLY_TO:Rovinj], [ACTION:FLY_TO:Zadar], [ACTION:FLY_TO:Pula], [ACTION:FLY_TO:Krka])
+- [ACTION:OPEN_MEMORY] wenn ${user} fragt "Zeige mein Gedächtnis", wissen will was du dir gemerkt hast oder das Gedächtnis einsehen will.
+- [ACTION:REMEMBER:Text] wenn ${user} dich bittet, dir etwas Bestimmtes zu merken oder zu notieren (z.B. Hotelname, Vorlieben).
 - [ACTION:OPEN_PACKLIST] wenn ${user} die Tasche packen möchte oder nach der Packliste fragt.
+- [ACTION:FLY_TO:Ortname] (z.B. [ACTION:FLY_TO:Dubrovnik], [ACTION:FLY_TO:Split], [ACTION:FLY_TO:Rovinj], [ACTION:FLY_TO:Zadar], [ACTION:FLY_TO:Pula], [ACTION:FLY_TO:Krka])
 - [ACTION:START_TOUR] wenn ${user} eine 3D-Tour starten möchte.
 - [ACTION:MAP_MODE:satellite] oder [ACTION:MAP_MODE:3d]
 
 Aktueller Standort des Nutzers: ${location.name || 'Kroatien'} (Lat: ${location.lat}, Lng: ${location.lng}).
-Aktiver Filter: ${category || 'Alle'}.`;
+Aktiver Filter: ${category || 'Alle'}.${ragContext || ''}`;
 }
 
 /** Baut die Gesprächsliste (letzte 6 Verlaufseinträge + aktuelle Frage). */
@@ -104,11 +110,12 @@ export function extractReplyText(data: any): string {
 
 /** Direkter Aufruf der Gemini-REST-API mit dem lokalen Schlüssel. */
 export async function callGeminiDirect(key: string, req: GeminiRequest): Promise<string> {
+  const ragCtx = req.ragContext ?? formatRAGContextForPrompt(req.prompt);
   const response = await fetch(`${GEMINI_ENDPOINT}/${GEMINI_MODEL}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: buildSystemInstruction(req.location, req.category, req.userName, req.assistantName) }] },
+      systemInstruction: { parts: [{ text: buildSystemInstruction(req.location, req.category, req.userName, req.assistantName, ragCtx) }] },
       contents: buildContents(req.history, req.prompt),
       generationConfig: { temperature: 0.7 }
     })
@@ -125,10 +132,11 @@ export async function callGeminiDirect(key: string, req: GeminiRequest): Promise
 
 /** Aufruf des optionalen Backends (server.ts bzw. gehostete Variante). */
 export async function callBackend(baseUrl: string, req: GeminiRequest): Promise<string> {
+  const ragCtx = req.ragContext ?? formatRAGContextForPrompt(req.prompt);
   const response = await fetch(`${baseUrl}/api/gemini`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req)
+    body: JSON.stringify({ ...req, ragContext: ragCtx })
   });
   const data = await response.json();
   const text = data?.reply || '';
@@ -151,13 +159,16 @@ export function buildOfflineFallback(locationName: string, reason: string): stri
 /** Orchestrierung: Server-Backend (/api/gemini) → lokaler Schlüssel → Offline-Fallback. */
 export async function askGemini(req: GeminiRequest): Promise<string> {
   const baseUrl = ((import.meta as any).env?.VITE_API_BASE_URL ?? '').toString().trim();
+  const ragCtx = req.ragContext ?? formatRAGContextForPrompt(req.prompt);
+  const enrichedReq: GeminiRequest = { ...req, ragContext: ragCtx };
+
   try {
-    return await callBackend(baseUrl, req);
+    return await callBackend(baseUrl, enrichedReq);
   } catch (backendErr: any) {
     const key = getStoredGeminiKey();
     if (key) {
       try {
-        return await callGeminiDirect(key, req);
+        return await callGeminiDirect(key, enrichedReq);
       } catch (err: any) {
         return buildOfflineFallback(req.location.name, `Gemini-Fehler: ${err?.message || 'unbekannt'}`);
       }

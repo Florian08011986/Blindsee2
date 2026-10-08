@@ -23,11 +23,13 @@ import {
   ChevronUp,
   ChevronDown,
   Luggage,
-  Navigation
+  Navigation,
+  Brain
 } from 'lucide-react';
 import { Landmark } from '../utils';
 import { askGemini } from '../geminiClient';
 import { renderChatMarkdown } from '../chatMarkdown';
+import { addMemory, detectRememberIntent } from '../memoryRAG';
 
 interface PredefinedAction {
   id: string;
@@ -37,6 +39,7 @@ interface PredefinedAction {
   categoryToActivate?: string;
   isPacklistAction?: boolean;
   isHelpAction?: boolean;
+  isMemoryAction?: boolean;
 }
 
 export const PREDEFINED_ACTIONS: PredefinedAction[] = [
@@ -46,6 +49,13 @@ export const PREDEFINED_ACTIONS: PredefinedAction[] = [
     glyph: 'ℹ️',
     prompt: 'Hilf mir mit deinen Funktionen',
     isHelpAction: true
+  },
+  {
+    id: 'gedaechtnis-rag',
+    label: 'Gemeinsames Gedächtnis (RAG) öffnen',
+    glyph: '🧠',
+    prompt: 'Zeige mein gemeinsames Gedächtnis und alle gespeicherten Fakten.',
+    isMemoryAction: true
   },
   {
     id: 'packliste',
@@ -139,6 +149,7 @@ interface GeminiBottomChatProps {
   onActivateCategory: (categoryName: string) => void;
   onOpenPacklist: () => void;
   onOpenHelp: () => void;
+  onOpenMemory: () => void;
   onSetMapMode: (mode: '3d' | 'satellite') => void;
   onStartTour: () => void;
   onInteractionChange?: (isInteracting: boolean) => void;
@@ -157,6 +168,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   onActivateCategory,
   onOpenPacklist,
   onOpenHelp,
+  onOpenMemory,
   onSetMapMode,
   onStartTour,
   onInteractionChange
@@ -164,7 +176,6 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   const [inputText, setInputText] = useState('');
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showProactiveBanner, setShowProactiveBanner] = useState(true);
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => [
     {
@@ -205,7 +216,23 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
       executedAction = 'ℹ️ Hilfsdatei & Funktionen geöffnet';
     }
 
-    // 2. Packliste öffnen
+    // 2. Gemeinsames Gedächtnis (RAG) öffnen
+    if (/\[ACTION:OPEN_MEMORY\]/i.test(cleanText)) {
+      cleanText = cleanText.replace(/\[ACTION:OPEN_MEMORY\]/gi, '').trim();
+      onOpenMemory();
+      executedAction = '🧠 Vektor-Gedächtnis geöffnet';
+    }
+
+    // 3. Etwas ins Gedächtnis einbetten / merken
+    const rememberMatch = cleanText.match(/\[ACTION:REMEMBER:(.*?)\]/i);
+    if (rememberMatch) {
+      const toRemember = rememberMatch[1].trim();
+      cleanText = cleanText.replace(/\[ACTION:REMEMBER:(.*?)\]/gi, '').trim();
+      addMemory(toRemember, 'allgemein');
+      executedAction = `🧠 Im Vektor-Gedächtnis gespeichert: „${toRemember.slice(0, 32)}...“`;
+    }
+
+    // 4. Packliste öffnen
     if (/\[ACTION:OPEN_PACKLIST\]/i.test(cleanText)) {
       cleanText = cleanText.replace(/\[ACTION:OPEN_PACKLIST\]/gi, '').trim();
       onOpenPacklist();
@@ -270,6 +297,26 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
       onOpenPacklist();
     }
 
+    // Fast-path client intercept for shared RAG vector memory
+    if (
+      norm.includes('gedächtnis') ||
+      norm.includes('was weißt du über mich') ||
+      norm.includes('was hast du dir gemerkt') ||
+      norm.includes('erinnerungen anzeigen') ||
+      norm === 'gedächtnis' ||
+      norm === 'memory'
+    ) {
+      onOpenMemory();
+    }
+
+    // Detect on-the-fly "Merke dir: ..." intent
+    const rememberMatch = detectRememberIntent(trimmed);
+    let autoMemoryNote = '';
+    if (rememberMatch) {
+      addMemory(rememberMatch.textToRemember, rememberMatch.category);
+      autoMemoryNote = `🧠 Im Gedächtnis verankert: „${rememberMatch.textToRemember}“`;
+    }
+
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender: 'user',
@@ -307,7 +354,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
         sender: 'gemini',
         text: cleanText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        actionExecuted: executedAction
+        actionExecuted: executedAction || autoMemoryNote || undefined
       };
 
       setChatHistory((prev) => [...prev, geminiMessage]);
@@ -331,6 +378,9 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     if (action.isPacklistAction) {
       onOpenPacklist();
     }
+    if (action.isMemoryAction) {
+      onOpenMemory();
+    }
     if (action.categoryToActivate) {
       onActivateCategory(action.categoryToActivate);
     }
@@ -346,50 +396,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   return (
     <div className="absolute bottom-3 inset-x-0 z-40 pointer-events-none flex flex-col items-center justify-end px-3 select-none">
       <div className="w-full max-w-xl flex flex-col items-stretch space-y-2">
-        {/* PROAKTIVER URLAUBS-COUNTDOWN & PACKLISTEN-ANSTOSS */}
-        <AnimatePresence>
-          {showProactiveBanner && !isChatOverlayOpen && !activeLandmark && (
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="pointer-events-auto p-3 rounded-2xl bg-slate-950/92 backdrop-blur-xl border border-cyan-400/40 shadow-2xl flex items-center justify-between gap-3 text-left"
-            >
-              <div className="flex items-start gap-2.5 min-w-0">
-                <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0 mt-0.5">
-                  <Luggage className="w-4 h-4 animate-bounce" />
-                </div>
-                <div className="space-y-0.5 min-w-0">
-                  <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <span>Noch exakt 48 Stunden bis zum Abflug! 🇭🇷</span>
-                  </p>
-                  <p className="text-[11px] text-slate-300 leading-snug line-clamp-2">
-                    Florian hat mir deine Kroatien-Packliste übergeben. Wollen wir deine Tasche zusammen packen?
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => {
-                    onOpenPacklist();
-                    setShowProactiveBanner(false);
-                  }}
-                  className="px-3 py-1.5 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md active:scale-95 cursor-pointer"
-                >
-                  Ja, packen!
-                </button>
-                <button
-                  onClick={() => setShowProactiveBanner(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
-                  title="Später"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* ACTIVE POI DETAIL CARD (Docks directly above bottom input) */}
 
         {/* ACTIVE POI DETAIL CARD (Docks directly above bottom input) */}
         <AnimatePresence>
@@ -546,6 +553,14 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onOpenMemory()}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-purple-300 text-xs flex items-center gap-1 cursor-pointer mr-0.5"
+                    title="Gemeinsames Gedächtnis (RAG) anzeigen"
+                  >
+                    <Brain className="w-3.5 h-3.5" />
+                    <span className="text-[11px] hidden sm:inline">Gedächtnis</span>
+                  </button>
                   <button
                     onClick={() => onOpenPacklist()}
                     className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 text-xs flex items-center gap-1 cursor-pointer mr-1"
