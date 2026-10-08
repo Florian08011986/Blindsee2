@@ -119,8 +119,24 @@ const DEFAULT_MEMORIES_DATA: Array<{ text: string; category: MemoryCategory }> =
     category: 'florian_tipps'
   },
   {
+    text: 'Florian hat festgelegt: Da Leon, Mia und Lea auf der Kroatien-Reise dabei sind, müssen alle Notrufnummern jederzeit sofort griffbereit sein: Feuerwehr 193, Polizei 192, Krankenwagen und Notarzt 194, Giftnotruf Kroatien (+385 1 2348 342, 24h Giftkontrollzentrum KBC Zagreb), Seenotrettung 195, Pannenhilfe HAK 1987 und Allgemeiner Notruf 112.',
+    category: 'florian_tipps'
+  },
+  {
     text: 'Florian hat festgelegt: Notrufnummern in Kroatien sind gebührenfrei erreichbar: Allgemein 112, Polizei 192, Notarzt 194, Seenotrettung 195, Pannenhilfe HAK 1987.',
     category: 'florian_tipps'
+  },
+  {
+    text: 'Florian hat festgelegt: Der KI-Reisebegleiter übernimmt selbstverständlich auch die Ausflugs-, Sicherheits- und Tagesplanung für die drei Kinder Leon, Mia und Lea (flache Kiesstrände, Schatten, kindgerechte Highlights).',
+    category: 'praeferenz'
+  },
+  {
+    text: 'Florians vollständige Packliste: Personalausweis, Portmonee mit Geld, Krankenkassenkarte, Handy, Ladekabel, 1-2 Powerbanks, Kopfhörer, Raucherzeug, Bauchtasche, Unterhosen, Socken, T-Shirts, Pullover, lange und kurze Hosen, Sonnenbrille, dünne Jacke, Wechselschuhe, Zahnbürste, Zahnpasta, Duschgel, Shampoo, Deo, Haarspray (<150 ml), Haarbürste, Medizin, Nagelknipser, Badehose, schwarze Badeschuhe, Mini-Handtuch, kurzer Schlafanzug, Buch, Trinkflasche und Lochsäge.',
+    category: 'packliste'
+  },
+  {
+    text: 'Florians To-Do-Checkliste vor der Abreise: Blumen gießen, offene Flaschen wegbringen, Müll rausbringen und prüfen, ob alles auf dem Balkon regensicher ist.',
+    category: 'packliste'
   },
   {
     text: 'Florians Geheimtipp Split: Die Riva-Promenade und den Diokletianspalast am Abend im goldenen Licht besuchen; für spektakulären Sonnenuntergang auf den Marjan-Aussichtspunkt gehen.',

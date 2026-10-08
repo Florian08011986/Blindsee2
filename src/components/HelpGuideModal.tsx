@@ -170,9 +170,12 @@ export const HelpGuideModal: React.FC<HelpGuideModalProps> = ({
 
           {/* 4. Notrufnummern Kroatien */}
           <div className="space-y-2">
-            <h4 className="font-bold text-rose-400 uppercase tracking-wider text-xs flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              <span>Wichtige Notrufnummern in Kroatien (Gebührenfrei)</span>
+            <h4 className="font-bold text-rose-400 uppercase tracking-wider text-xs flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                <span>Wichtige Notrufnummern in Kroatien (Gebührenfrei &amp; 24h)</span>
+              </span>
+              <span className="text-[10px] text-purple-300 font-normal">Schutz für Leon, Mia &amp; Lea</span>
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
               <div className="p-2.5 rounded-xl bg-slate-900 border border-rose-500/30">
@@ -191,9 +194,9 @@ export const HelpGuideModal: React.FC<HelpGuideModalProps> = ({
                 <strong className="block text-white">Feuerwehr (Vatrogasci)</strong>
                 <span className="text-rose-400 font-bold text-sm">193</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-900 border border-cyan-500/30">
-                <strong className="block text-white">Seenotrettung</strong>
-                <span className="text-cyan-400 font-bold text-sm">195</span>
+              <div className="p-2.5 rounded-xl bg-purple-950/60 border border-purple-500/40">
+                <strong className="block text-white">Giftnotruf Kroatien</strong>
+                <span className="text-purple-300 font-bold text-xs">+385 1 2348 342</span>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-900 border border-amber-500/30">
                 <strong className="block text-white">Pannenhilfe (HAK)</strong>

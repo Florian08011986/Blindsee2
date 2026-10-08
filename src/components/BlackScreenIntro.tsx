@@ -5,7 +5,6 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, ArrowRight, Check, ChevronRight, Luggage } from 'lucide-react';
 import { PacklistWidget } from './PacklistWidget';
 
 interface BlackScreenIntroProps {
@@ -83,7 +82,7 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
       {/* Absolute pure pitch-black background */}
       <div className="absolute inset-0 bg-black pointer-events-none" />
 
-      {/* Top Sleek Storyline Progress Bar (segmented bars like modern storyboards) */}
+      {/* Top Sleek Storyline Progress Bar */}
       <div className="relative z-10 w-full max-w-md mx-auto flex items-center gap-1 shrink-0 pt-2 opacity-80">
         {Array.from({ length: totalBeats }).map((_, idx) => (
           <div
@@ -99,7 +98,7 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
         ))}
       </div>
 
-      {/* Center Cinematic Story Content */}
+      {/* Center Cinematic Story Content (Pure radiant white typography on pitch black) */}
       <div
         className="relative z-10 max-w-lg w-full mx-auto my-auto flex flex-col items-center justify-center text-center px-2 py-4"
         onClick={(e) => {
@@ -121,10 +120,7 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-6"
             >
-              <div className="w-16 h-16 rounded-full border border-white/25 flex items-center justify-center bg-white/5 mx-auto shadow-[0_0_30px_rgba(255,255,255,0.25)]">
-                <Sparkles className="w-8 h-8 text-white animate-pulse" />
-              </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-snug drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-snug drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]">
                 Hey, ich bin Florian's KI-Assistent.
               </h1>
             </motion.div>
@@ -139,7 +135,6 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-6"
             >
-              <span className="text-4xl block">🇭🇷✨</span>
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-snug drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
                 ...und in dieser App ab heute dein ganz persönlicher Reisebegleiter für Kroatien.
               </h1>
@@ -173,7 +168,6 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-4"
             >
-              <span className="text-3xl block">🌊☀️</span>
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight leading-relaxed drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
                 Damit es euch an absolut nichts fehlt und ihr jeden Augenblick in vollen Zügen genießen könnt.
               </h2>
@@ -233,10 +227,9 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-full bg-white text-black font-extrabold text-sm tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:bg-black hover:text-white border-2 border-white transition-all transform active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-full bg-white text-black font-extrabold text-sm tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:bg-neutral-200 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center"
                 >
                   <span>Weiter</span>
-                  <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
             </motion.div>
@@ -292,10 +285,9 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-full bg-white text-black font-extrabold text-sm tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:bg-black hover:text-white border-2 border-white transition-all transform active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-full bg-white text-black font-extrabold text-sm tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:bg-neutral-200 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center"
                 >
                   <span>Name bestätigen</span>
-                  <Check className="w-4 h-4" />
                 </button>
               </form>
             </motion.div>
@@ -331,7 +323,6 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-4"
             >
-              <span className="text-4xl block">🦅</span>
               <span className="text-xs uppercase tracking-widest text-white/60 font-semibold block">
                 Funktion 1 • 3D-Kameraflüge
               </span>
@@ -354,7 +345,6 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-4"
             >
-              <span className="text-4xl block">🏖️</span>
               <span className="text-xs uppercase tracking-widest text-white/60 font-semibold block">
                 Funktion 2 • 25 km Umkreis
               </span>
@@ -377,9 +367,8 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-4"
             >
-              <span className="text-4xl block">🚗</span>
               <span className="text-xs uppercase tracking-widest text-white/60 font-semibold block">
-                Funktion 3 • Touren &amp; Routen
+                Funktion 3 • Touren und Routen
               </span>
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight leading-snug drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
                 Geführte 3D-Altstadt-Touren.
@@ -400,16 +389,15 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-4 max-w-md mx-auto"
             >
-              <span className="text-4xl block">🎒🇭🇷</span>
-              <span className="text-xs uppercase tracking-widest text-cyan-300 font-semibold block">
+              <span className="text-xs uppercase tracking-widest text-white/60 font-semibold block">
                 Funktion 4 • Proaktives Übungsbeispiel
               </span>
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
                 „Noch 48 Stunden bis zum Start. Wollen wir deine Tasche packen?“
               </h2>
               <p className="text-sm font-light text-white/80 leading-relaxed">
-                Florian hat mir deine interaktive Kroatien-Packliste übergeben (Badeschuhe gegen Seeigel, ENC-Maut, Dokumente).
-                Probieren wir es gleich als Übung aus!
+                Florian hat mir eure vollständige Packliste übergeben: Von Personalausweis, schwarzen Badeschuhen und Ladekabeln bis hin zu Blumen gießen und der Lochsäge.
+                Probieren wir es gleich als Übung gemeinsam aus!
               </p>
 
               <div className="pt-2 flex flex-col gap-2.5">
@@ -419,10 +407,9 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
                     e.stopPropagation();
                     setIsPacklistExerciseOpen(true);
                   }}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-white text-black hover:bg-neutral-200 font-bold text-sm shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all active:scale-95 cursor-pointer flex items-center justify-center"
                 >
-                  <Luggage className="w-4 h-4" />
-                  <span>🎒 Ja, Packliste jetzt testen &amp; abhaken!</span>
+                  <span>Packliste jetzt testen und abhaken</span>
                 </button>
                 <button
                   type="button"
@@ -432,13 +419,13 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
                   }}
                   className="py-1.5 px-3 text-xs text-white/60 hover:text-white transition-colors cursor-pointer"
                 >
-                  Weiter im Onboarding →
+                  Weiter im Onboarding
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* Feature 5: Infrastruktur & Notruf */}
+          {/* Feature 5: Notrufnummern & Planung für Leon, Mia & Lea */}
           {beat === 12 && (
             <motion.div
               key="beat-12"
@@ -446,17 +433,16 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.4 }}
-              className="space-y-4"
+              className="space-y-4 max-w-md mx-auto"
             >
-              <span className="text-4xl block">⛽ 🏥</span>
               <span className="text-xs uppercase tracking-widest text-white/60 font-semibold block">
-                Funktion 5 • Schutz &amp; Infrastruktur
+                Funktion 5 • Schutz und Sicherheit
               </span>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight leading-snug drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
-                Spritpreise, 24h-Apotheken &amp; Notruf.
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+                Florian hat mir neben der Packliste auch die Telefonnummern von Feuerwehr, Polizei, Krankenwagen und des Giftnotrufs gegeben – da ihr ja Leon, Mia und Lea dabei habt.
               </h2>
-              <p className="text-sm sm:text-base font-light text-white/80 leading-relaxed max-w-md mx-auto">
-                Immer sicher unterwegs: Von aktuellen Benzinpreisen bis hin zu Notrufnummern (112, Pannenhilfe 1987, Seenotrettung 195) hast du alles sofort parat.
+              <p className="text-sm font-light text-white/80 leading-relaxed">
+                Ich übernehme selbstverständlich auch die Ausflugs- und Tagesplanung für die Kinder mit: Polizei (192), Feuerwehr (193), Krankenwagen (194) und der Giftnotruf (+385 1 2348 342) sowie sichere Strände und 24h-Apotheken sind jederzeit sofort für euch parat.
               </p>
             </motion.div>
           )}
@@ -471,7 +457,6 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-4"
             >
-              <span className="text-4xl block">💬</span>
               <span className="text-xs uppercase tracking-widest text-white/60 font-semibold block">
                 Funktion 6 • Zero-Menu-Doktrin
               </span>
@@ -494,9 +479,8 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.4 }}
               className="space-y-4"
             >
-              <span className="text-4xl block">ℹ️ 🌐</span>
               <span className="text-xs uppercase tracking-widest text-white/60 font-semibold block">
-                Funktion 7 • Gesten &amp; Info-Symbol
+                Funktion 7 • Gesten und Befehlskatalog
               </span>
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight leading-snug drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
                 Volle Freiheit in 3D.
@@ -517,25 +501,21 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
               transition={{ duration: 0.5 }}
               className="space-y-6 w-full max-w-sm mx-auto"
             >
-              <div className="w-16 h-16 rounded-full border border-white/30 flex items-center justify-center bg-white/10 mx-auto shadow-[0_0_30px_rgba(255,255,255,0.4)]">
-                <span className="text-2xl">🇭🇷</span>
-              </div>
               <div className="space-y-2">
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
                   Bereit für Kroatien, {userName}?
                 </h2>
                 <p className="text-base text-white/85 font-light">
-                  Ich bin an deiner Seite. Lass uns deinen Urlaub unvergesslich machen!
+                  Ich bin an eurer Seite. Lass uns euren Urlaub unvergesslich machen!
                 </p>
               </div>
 
               <div className="pt-4">
                 <button
                   onClick={handleFinish}
-                  className="w-full py-4 rounded-full bg-white text-black font-black text-base tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.6)] hover:bg-black hover:text-white border-2 border-white transition-all transform active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-full bg-white text-black font-black text-base tracking-wide shadow-[0_0_30px_rgba(255,255,255,0.6)] hover:bg-neutral-200 border-2 border-white transition-all transform active:scale-95 cursor-pointer flex items-center justify-center"
                 >
-                  <span>Auf nach Kroatien! 🇭🇷</span>
-                  <ChevronRight className="w-5 h-5" />
+                  <span>Auf nach Kroatien!</span>
                 </button>
               </div>
             </motion.div>
@@ -543,7 +523,7 @@ export const BlackScreenIntro: React.FC<BlackScreenIntroProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Bottom Subtle Navigation Indicator (No text, just clean dots / step counter) */}
+      {/* Bottom Subtle Navigation Indicator */}
       <div className="relative z-10 w-full flex items-center justify-center shrink-0 pb-2 opacity-40">
         <span className="text-[10px] tracking-widest uppercase font-mono text-white">
           {beat + 1} / {totalBeats}

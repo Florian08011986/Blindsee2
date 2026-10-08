@@ -4,44 +4,88 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { CheckSquare, Square, X, Sparkles, Check, RotateCcw, Luggage } from 'lucide-react';
+import { motion } from 'motion/react';
+import { CheckSquare, Square, X, RotateCcw, Luggage } from 'lucide-react';
 
-interface PackItem {
+export type PackCategory =
+  | 'Wichtiges & Papiere'
+  | 'Anziehsachen & Draußen'
+  | 'Badsachen & Pflege'
+  | 'Baden & Schlafen'
+  | 'Beschäftigung, Sonstiges & Werkzeug'
+  | 'To-Do vor der Abreise';
+
+export interface PackItem {
   id: string;
-  category: 'Papiere & Maut' | 'Kroatien-Specials' | 'Strand & Baden' | 'Kleidung & Alltag' | 'Gesundheit & Technik';
+  category: PackCategory;
   label: string;
   hint?: string;
   checked: boolean;
 }
 
-const DEFAULT_PACKLIST: PackItem[] = [
-  // Papiere & Maut
-  { id: 'pass', category: 'Papiere & Maut', label: 'Reisepass / Personalausweis (mind. 3 Monate gültig)', checked: false },
-  { id: 'krankenkasse', category: 'Papiere & Maut', label: 'Europäische Krankenversicherungskarte (EHIC)', checked: false },
-  { id: 'vignette', category: 'Papiere & Maut', label: 'Vignetten (Österreich / Slowenien digital vorbuchen)', checked: false },
-  { id: 'maut_enc', category: 'Papiere & Maut', label: 'Kroatische Autobahnmaut (Kreditkarte oder ENC-Mautbox)', checked: false },
-  { id: 'fuehrerschein', category: 'Papiere & Maut', label: 'Führerschein & Grüne Versicherungskarte', checked: false },
+export const FLORIAN_PACKLIST: PackItem[] = [
+  // 1. Wichtiges & Papiere
+  { id: 'ausweis', category: 'Wichtiges & Papiere', label: 'Personalausweis', checked: false },
+  { id: 'portmonee', category: 'Wichtiges & Papiere', label: 'Portmonee mit Geld', checked: false },
+  { id: 'krankenkasse', category: 'Wichtiges & Papiere', label: 'Krankenkassenkarte', checked: false },
+  { id: 'handy', category: 'Wichtiges & Papiere', label: 'Handy', checked: false },
+  { id: 'ladekabel', category: 'Wichtiges & Papiere', label: 'Ladekabel', checked: false },
+  { id: 'powerbank', category: 'Wichtiges & Papiere', label: 'Externer Akku oder 2?', checked: false },
+  { id: 'kopfhoerer', category: 'Wichtiges & Papiere', label: 'Kopfhörer?', checked: false },
+  { id: 'raucherzeug', category: 'Wichtiges & Papiere', label: 'Raucher Zeug', checked: false },
+  { id: 'bauchtasche', category: 'Wichtiges & Papiere', label: 'Deine kleine Bauchtasche?', checked: false },
 
-  // Kroatien-Specials
-  { id: 'badeschuhe', category: 'Kroatien-Specials', label: 'Badeschuhe / Neoprenschuhe (wichtig wegen Seeigeln & Felsen)', checked: false },
-  { id: 'schnorchel', category: 'Kroatien-Specials', label: 'Schnorchelset & Taucherbrille (kristallklares Adria-Wasser)', checked: false },
-  { id: 'strandmatte', category: 'Kroatien-Specials', label: 'Gepolsterte Liegematte (für Kiesel- & Felsstrände)', checked: false },
-  { id: 'euro_bargeld', category: 'Kroatien-Specials', label: 'Etwas Euro-Bargeld (für kleine Stände, Parkplätze & Eis)', checked: false },
+  // 2. Anziehsachen & Draußen
+  { id: 'unterhosen', category: 'Anziehsachen & Draußen', label: 'Unterhosen', checked: false },
+  { id: 'socken', category: 'Anziehsachen & Draußen', label: 'Socken', checked: false },
+  { id: 'tshirts', category: 'Anziehsachen & Draußen', label: 'T-Shirts', checked: false },
+  { id: 'pullover', category: 'Anziehsachen & Draußen', label: 'Pullover', checked: false },
+  { id: 'hosen', category: 'Anziehsachen & Draußen', label: 'Hosen', checked: false },
+  { id: 'kurze_hosen', category: 'Anziehsachen & Draußen', label: 'Kurze Hosen', checked: false },
+  { id: 'sonnenbrille', category: 'Anziehsachen & Draußen', label: 'Sonnenbrille', checked: false },
+  { id: 'duenne_jacke', category: 'Anziehsachen & Draußen', label: 'Dünne Jacke', checked: false },
+  { id: 'wechselschuhe', category: 'Anziehsachen & Draußen', label: 'Wechselschuhe?', checked: false },
 
-  // Gesundheit & Technik
-  { id: 'sonnencreme', category: 'Gesundheit & Technik', label: 'Sonnencreme LSF 30-50 & After-Sun-Lotion', checked: false },
-  { id: 'mueckenschutz', category: 'Gesundheit & Technik', label: 'Mückenspray & Fenistil-Gel', checked: false },
-  { id: 'powerbank', category: 'Gesundheit & Technik', label: 'Powerbank für Kamera- & Maps-Nutzung unterwegs', checked: false },
-  { id: 'reiseapotheke', category: 'Gesundheit & Technik', label: 'Reiseapotheke (Ibuprofen, Elektrolyte, Pflaster)', checked: false },
+  // 3. Badsachen & Pflege
+  { id: 'zahnbuerste', category: 'Badsachen & Pflege', label: 'Zahnbürste', checked: false },
+  { id: 'zahnpasta', category: 'Badsachen & Pflege', label: 'Zahnpasta', checked: false },
+  { id: 'duschgel', category: 'Badsachen & Pflege', label: 'Duschgel', checked: false },
+  { id: 'shampoo', category: 'Badsachen & Pflege', label: 'Shampoo', checked: false },
+  { id: 'deo', category: 'Badsachen & Pflege', label: 'Deo', checked: false },
+  {
+    id: 'haarspray',
+    category: 'Badsachen & Pflege',
+    label: 'Haarspray (Flaschen unter 150 ml; 2.-6. gern von uns mitnutzen)',
+    checked: false
+  },
+  { id: 'haar_buerste', category: 'Badsachen & Pflege', label: 'Haarbürste', checked: false },
+  { id: 'medizin', category: 'Badsachen & Pflege', label: 'Medizin?', checked: false },
+  { id: 'nagelknipser', category: 'Badsachen & Pflege', label: 'Nagelknipser?', checked: false },
 
-  // Strand & Baden
-  { id: 'strandtuch', category: 'Strand & Baden', label: 'Große Strandtücher & Mikrofaser-Handtücher', checked: false },
-  { id: 'sonnenbrille', category: 'Strand & Baden', label: 'Polarisierte Sonnenbrille & Sonnenhut/Cap', checked: false },
-  { id: 'drybag', category: 'Strand & Baden', label: 'Wasserdichter Dry-Bag (für Bootstouren & SUP)', checked: false },
+  // 4. Baden & Schlafen
+  { id: 'badehose', category: 'Baden & Schlafen', label: 'Badehose', checked: false },
+  {
+    id: 'badeschuhe_schwarz',
+    category: 'Baden & Schlafen',
+    label: 'Badeschuhe, z. B. die schwarzen, mit denen du ins Wasser gehen kannst',
+    checked: false
+  },
+  { id: 'mini_handtuch', category: 'Baden & Schlafen', label: 'Mini Handtuch?', checked: false },
+  { id: 'schlafanzug', category: 'Baden & Schlafen', label: 'Schlafanzug? Kurzer?', checked: false },
+
+  // 5. Beschäftigung, Sonstiges & Werkzeug
+  { id: 'buch', category: 'Beschäftigung, Sonstiges & Werkzeug', label: 'Buch?', checked: false },
+  { id: 'trinkflasche', category: 'Beschäftigung, Sonstiges & Werkzeug', label: 'Trinkflasche?', checked: false },
+  { id: 'lochsage', category: 'Beschäftigung, Sonstiges & Werkzeug', label: 'Lochsäge (Zusätzlich dran denken)', checked: false },
+
+  // 6. To-Do vor der Abreise
+  { id: 'blumen', category: 'To-Do vor der Abreise', label: 'Blumen gießen', checked: false },
+  { id: 'flaschen', category: 'To-Do vor der Abreise', label: 'Offene Flaschen wegbringen', checked: false },
+  { id: 'muell', category: 'To-Do vor der Abreise', label: 'Müll rausbringen', checked: false },
+  { id: 'balkon', category: 'To-Do vor der Abreise', label: 'Alles auf Balkon regensicher?', checked: false }
 ];
 
-const STORAGE_KEY = 'kroatien_packlist_state';
+const STORAGE_KEY = 'kroatien_packlist_florian_v3';
 
 interface PacklistWidgetProps {
   isOpen: boolean;
@@ -53,9 +97,12 @@ export const PacklistWidget: React.FC<PacklistWidgetProps> = ({ isOpen, onClose,
   const [items, setItems] = useState<PackItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch {}
-    return DEFAULT_PACKLIST;
+    return FLORIAN_PACKLIST;
   });
 
   useEffect(() => {
@@ -71,7 +118,7 @@ export const PacklistWidget: React.FC<PacklistWidgetProps> = ({ isOpen, onClose,
   };
 
   const resetAll = () => {
-    setItems(DEFAULT_PACKLIST.map((it) => ({ ...it, checked: false })));
+    setItems(FLORIAN_PACKLIST.map((it) => ({ ...it, checked: false })));
   };
 
   if (!isOpen) return null;
@@ -79,7 +126,14 @@ export const PacklistWidget: React.FC<PacklistWidgetProps> = ({ isOpen, onClose,
   const checkedCount = items.filter((it) => it.checked).length;
   const progressPercent = Math.round((checkedCount / items.length) * 100);
 
-  const categories = Array.from(new Set(items.map((it) => it.category)));
+  const categories: PackCategory[] = [
+    'Wichtiges & Papiere',
+    'Anziehsachen & Draußen',
+    'Badsachen & Pflege',
+    'Baden & Schlafen',
+    'Beschäftigung, Sonstiges & Werkzeug',
+    'To-Do vor der Abreise'
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md select-none">
@@ -138,6 +192,7 @@ export const PacklistWidget: React.FC<PacklistWidgetProps> = ({ isOpen, onClose,
         <div className="p-5 overflow-y-auto space-y-6">
           {categories.map((cat) => {
             const catItems = items.filter((it) => it.category === cat);
+            if (catItems.length === 0) return null;
             return (
               <div key={cat} className="space-y-2.5">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
