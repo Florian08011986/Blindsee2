@@ -36,9 +36,17 @@ interface PredefinedAction {
   prompt: string;
   categoryToActivate?: string;
   isPacklistAction?: boolean;
+  isHelpAction?: boolean;
 }
 
 export const PREDEFINED_ACTIONS: PredefinedAction[] = [
+  {
+    id: 'hilf-funktionen',
+    label: 'Hilf mir mit deinen Funktionen',
+    glyph: 'ℹ️',
+    prompt: 'Hilf mir mit deinen Funktionen',
+    isHelpAction: true
+  },
   {
     id: 'packliste',
     label: 'Kroatien-Packliste öffnen & prüfen',
@@ -130,6 +138,7 @@ interface GeminiBottomChatProps {
   onAddToTour: (landmark: Landmark) => void;
   onActivateCategory: (categoryName: string) => void;
   onOpenPacklist: () => void;
+  onOpenHelp: () => void;
   onSetMapMode: (mode: '3d' | 'satellite') => void;
   onStartTour: () => void;
 }
@@ -146,6 +155,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   onAddToTour,
   onActivateCategory,
   onOpenPacklist,
+  onOpenHelp,
   onSetMapMode,
   onStartTour
 }) => {
@@ -158,7 +168,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     {
       id: 'welcome-intro-msg',
       sender: 'gemini',
-      text: `Hey ${userName || 'Florian'}! Ich bin ${assistantName || 'Luka'}, dein persönlicher Reisebegleiter für Kroatien. 🇭🇷✨\n\nFrag mich jederzeit nach 3D-Flügen, Stränden, Restaurants oder Notfall-Infrastruktur – oder sag mir einfach, wo du hin möchtest!`,
+      text: `Hey ${userName || 'Florian'}! Ich bin ${assistantName || 'Luka'}, dein persönlicher Reisebegleiter für Kroatien. 🇭🇷✨\n\nFrag mich jederzeit nach 3D-Flügen, Stränden, Restaurants oder Notfall-Infrastruktur – oder sag einfach: „Hilf mir mit deinen Funktionen“!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -180,14 +190,21 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     let cleanText = rawText;
     let executedAction: string | undefined;
 
-    // 1. Packliste öffnen
+    // 1. Hilfsdatei & Funktionen öffnen
+    if (/\[ACTION:OPEN_HELP\]/i.test(cleanText)) {
+      cleanText = cleanText.replace(/\[ACTION:OPEN_HELP\]/gi, '').trim();
+      onOpenHelp();
+      executedAction = 'ℹ️ Hilfsdatei & Funktionen geöffnet';
+    }
+
+    // 2. Packliste öffnen
     if (/\[ACTION:OPEN_PACKLIST\]/i.test(cleanText)) {
       cleanText = cleanText.replace(/\[ACTION:OPEN_PACKLIST\]/gi, '').trim();
       onOpenPacklist();
       executedAction = '🎒 Packliste geöffnet';
     }
 
-    // 2. 3D-Kameraflug zu Ort
+    // 3. 3D-Kameraflug zu Ort
     const flyMatch = cleanText.match(/\[ACTION:FLY_TO:(.*?)\]/i);
     if (flyMatch) {
       const place = flyMatch[1].trim();
@@ -196,14 +213,14 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
       executedAction = `🦅 3D-Flug zu ${place}`;
     }
 
-    // 3. Tour starten
+    // 4. Tour starten
     if (/\[ACTION:START_TOUR\]/i.test(cleanText)) {
       cleanText = cleanText.replace(/\[ACTION:START_TOUR\]/gi, '').trim();
       onStartTour();
       executedAction = '🚗 3D-Tour gestartet';
     }
 
-    // 4. Map-Mode umschalten
+    // 5. Map-Mode umschalten
     const modeMatch = cleanText.match(/\[ACTION:MAP_MODE:(.*?)\]/i);
     if (modeMatch) {
       const mode = modeMatch[1].trim().toLowerCase();
@@ -225,8 +242,23 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     const trimmed = promptToSend.trim();
     if (!trimmed || isLoading) return;
 
+    // Fast-path client intercept for help and function catalog
+    const norm = trimmed.toLowerCase();
+    if (
+      norm.includes('hilf mir mit deinen funktionen') ||
+      norm.includes('hilf mir') ||
+      norm.includes('was kannst du') ||
+      norm.includes('welche funktionen') ||
+      norm.includes('funktionen anzeigen') ||
+      norm.includes('hilfe anzeigen') ||
+      norm === 'hilfe' ||
+      norm === 'help'
+    ) {
+      onOpenHelp();
+    }
+
     // Fast-path client intercept for packing list
-    if (trimmed.toLowerCase().includes('packliste') && (trimmed.toLowerCase().includes('öffnen') || trimmed.toLowerCase().includes('anzeigen') || trimmed.toLowerCase() === 'packliste')) {
+    if (norm.includes('packliste') && (norm.includes('öffnen') || norm.includes('anzeigen') || norm === 'packliste')) {
       onOpenPacklist();
     }
 
@@ -285,6 +317,9 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   };
 
   const handleSelectPredefined = (action: PredefinedAction) => {
+    if (action.isHelpAction) {
+      onOpenHelp();
+    }
     if (action.isPacklistAction) {
       onOpenPacklist();
     }

@@ -640,7 +640,6 @@ export default function App() {
       {/* 2. CENTERED APP HEADER WITH DISCREET INFO (ℹ️) BUTTON */}
       <CleanHeader
         onOpenInfo={() => setShowHelpModal(true)}
-        currentLocationName={currentLocation.name}
         isTouring={isTouring}
         assistantName={assistantName}
       />
@@ -662,6 +661,7 @@ export default function App() {
           }
         }}
         onOpenPacklist={() => setShowPacklist(true)}
+        onOpenHelp={() => setShowHelpModal(true)}
         onSetMapMode={(mode) => setMapMode(mode)}
         onStartTour={startTour3D}
       />
