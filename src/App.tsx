@@ -118,14 +118,6 @@ export default function App() {
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
   const [keyInputValue, setKeyInputValue] = useState<string>('');
   const [geminiKeyInput, setGeminiKeyInput] = useState<string>('');
-  // Begrüßungstext des KI-Assistenten am Anfang
-  const [showWelcomeGreeting, setShowWelcomeGreeting] = useState<boolean>(() => {
-    try {
-      return !sessionStorage.getItem('welcome_greeting_dismissed');
-    } catch {
-      return true;
-    }
-  });
   const [mapsLoaded, setMapsLoaded] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -717,71 +709,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 6. WELCOME GREETING MODAL */}
-      <AnimatePresence>
-        {showWelcomeGreeting && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm select-none">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md p-6 rounded-3xl bg-slate-900/95 border border-cyan-400/30 text-white shadow-2xl backdrop-blur-xl overflow-hidden"
-            >
-              {/* Background Glow */}
-              <div className="absolute -top-12 -right-12 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
-              <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-blue-600/20 rounded-full blur-2xl pointer-events-none" />
-
-              <button
-                onClick={() => {
-                  try { sessionStorage.setItem('welcome_greeting_dismissed', '1'); } catch {}
-                  setShowWelcomeGreeting(false);
-                }}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all cursor-pointer"
-                title="Schließen"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              <div className="text-center space-y-4">
-                <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30">
-                  <Sparkles className="w-7 h-7 animate-pulse" />
-                </div>
-
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-[11px] font-semibold tracking-wide uppercase mb-2">
-                    <span>🇭🇷</span>
-                    <span>Kroatien Reisebegleiter</span>
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">
-                    Willkommen im Urlaub!
-                  </h2>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/10 text-left space-y-2.5 shadow-inner">
-                  <p className="text-sm font-semibold text-cyan-200 leading-relaxed">
-                    „Hey, ich bin Florian's KI-Assistent, und bin hier in dieser App euer Reisebegleiter.“
-                  </p>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    „Ich bin dafür verantwortlich, euch in jeder Lebenslage beziehungsweise in eurem Urlaub zur Seite zu stehen, damit es euch an nichts fehlt.“
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    onClick={() => {
-                      try { sessionStorage.setItem('welcome_greeting_dismissed', '1'); } catch {}
-                      setShowWelcomeGreeting(false);
-                    }}
-                    className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/25 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <span>Reise beginnen ⛵</span>
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
