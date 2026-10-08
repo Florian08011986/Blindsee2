@@ -449,3 +449,79 @@ export function detectRememberIntent(prompt: string): { textToRemember: string; 
 
   return null;
 }
+
+// =========================================================================
+// 6. ON-DEVICE LOKALE RAG-ANTWORT-ENGINE (OFFLINE- & INSTANT-INTELLIGENZ)
+// =========================================================================
+
+/**
+ * Erzeugt eine sofortige, hochpräzise On-Device Antwort aus dem RAG-Vektorspeicher,
+ * wenn der Nutzer keine Cloud-KI verbunden hat oder offline ist.
+ */
+export function generateLocalRAGAnswer(
+  prompt: string,
+  userName: string = 'Florian',
+  assistantName: string = 'Luka'
+): string | null {
+  const pLower = prompt.toLowerCase();
+
+  // 1. Spezifische Intent-Prüfungen
+  if (pLower.includes('packliste') || pLower.includes('tasche packen') || pLower.includes('koffer')) {
+    return `Hey ${userName}, ich habe deine Packliste und die To-Dos vor der Abreise griffbereit! Wir haben Badeschuhe für Kieselstrände, Ladekabel bis hin zur Lochsäge und Blumen gießen notiert. [ACTION:OPEN_PACKLIST]`;
+  }
+  if (pLower.includes('hilfe') || pLower.includes('funktionen') || pLower.includes('was kannst du')) {
+    return `Gerne, ${userName}! Ich zeige dir meine vollständige Funktionsübersicht und Befehle. [ACTION:OPEN_HELP]`;
+  }
+  if (pLower.includes('gedächtnis') || pLower.includes('gemerkt') || pLower.includes('memory')) {
+    return `Hier ist unser gemeinsamer Vektor-Gedächtnisspeicher mit allen hinterlegten Reisedaten. [ACTION:OPEN_MEMORY]`;
+  }
+  if (pLower.includes('base') || pLower.includes('hotel') || pLower.includes('unterkunft') || pLower.includes('zaton') || pLower.includes('resort')) {
+    return `Unsere feste Home Base ist das **Zaton Holiday Resort - Apartments** in Nin bei Zadar (Dražnikova ul. 78, Res.-Code: **PH30024257**). Ich fliege uns direkt dorthin! [ACTION:FLY_TO:Zaton]`;
+  }
+  if (pLower.includes('tanken') || pLower.includes('sprit') || pLower.includes('benzin') || pLower.includes('ersparnis') || pLower.includes('arbitrage') || pLower.includes('tschech')) {
+    return `Strategischer Tank-Tipp: In Tschechien (Super ca. 1,56 €) und Kroatien (staatlich gedeckelt bei INA ca. 1,48 €) sparst du 11–18 € pro 50L-Tankfüllung ggü. Deutschland! Vor Prag GO Parking volltanken lohnt sich enorm. [ACTION:OPEN_FUEL_CALCULATOR]`;
+  }
+  if (pLower.includes('meeresorgel') || pLower.includes('orgel') || pLower.includes('sonnengruß') || pLower.includes('zadar')) {
+    return `Die **Meeresorgel** und der **Sonnengruß** an der Uferpromenade von Zadar sind ein absolutes Must-See zum Sonnenuntergang! Lass uns hinfliegen. [ACTION:FLY_TO:Zadar]`;
+  }
+  if (pLower.includes('bäckerei') || pLower.includes('golub') || pLower.includes('burek') || pLower.includes('backwaren')) {
+    return `Die **Bäckerei Golub (Pekarna Bakery)** nördlich von Zadar bietet frischen, ofenfrischen Burek und Backwaren bis zu 60% günstiger als in Deutschland! Perfekter Proviant-Halt auf dem Weg nach Nin.`;
+  }
+  if (pLower.includes('krka') || pLower.includes('wasserf') || pLower.includes('vidikovac')) {
+    return `Der **Nationalpark Krka** (Skradinski Buk) und der spektakuläre Aussichtspunkt **Vidikovac Krka - Istok** bei Lozovac sind ca. 55–58 Minuten vom Zaton Resort entfernt. [ACTION:FLY_TO:Krka]`;
+  }
+  if (pLower.includes('plitvice') || pLower.includes('plitvitz')) {
+    return `Die **Plitvicer Seen** mit 16 smaragdgrünen Kaskadenseen sind ca. 1h 45m von unserer Base entfernt. Tickets unbedingt vorab online buchen!`;
+  }
+  if (pLower.includes('parkplatz') || pLower.includes('prag') || pLower.includes('schranke') || pLower.includes('pin') || pLower.includes('go parking')) {
+    return `Am Montag, 12.10.2026 um 07:00 Uhr am **GO parking** in Prag sein (Ke Kopanině 406, Tuchoměřice). Der Schranken-PIN lautet: **297497**! Kindersitz mitnehmen!`;
+  }
+  if (pLower.includes('flug') || pLower.includes('sitze') || pLower.includes('sitzplatz') || pLower.includes('ryanair') || pLower.includes('abflug')) {
+    return `Abflug am Montag, 12.10.2026 um 09:50 Uhr ab Prag, Ankunft 11:15 Uhr in Zadar. Eure reservierten Sitzplätze: **15 B, 15 C, 15 D, 15 E und 15 F**!`;
+  }
+  if (pLower.includes('mietwagen') || pLower.includes('auto') || pLower.includes('avis')) {
+    return `Mietwagen direkt nach Ankunft am Flughafen Zadar abholen bei **Avis / Car Hire Market** (Buchungsnummer: **CN982799134120**).`;
+  }
+  if (pLower.includes('boot') || pLower.includes('ausflug') || pLower.includes('freitag')) {
+    return `Fester gebuchter Termin: Am **Freitag, 16.10.2026 um 08:00 Uhr** morgens startet unser **Bootsausflug**! Tickets liegen digital vor.`;
+  }
+  if (pLower.includes('notruf') || pLower.includes('gift') || pLower.includes('arzt') || pLower.includes('polizei') || pLower.includes('feuerwehr') || pLower.includes('krankenhaus')) {
+    return `Notruf-Matrix Kroatien:\n• Feuerwehr: **193**\n• Polizei: **192**\n• Rettungswagen/Hitna: **194**\n• Giftnotruf Kroatien (KBC Zagreb 24h): **+385 1 2348 342**\n• Pannenhilfe HAK: **1987**\n• EU-Notruf: **112**`;
+  }
+  if (pLower.includes('lea') || pLower.includes('regen') || pLower.includes('schlechtwetter') || pLower.includes('indoor') || pLower.includes('twister')) {
+    return `Für Lea (vor allem bei Regen oder Hitze) gibt es den geschützten Indoorspielplatz **Twister Fun Park** im Einkaufszentrum Supernova Zadar!`;
+  }
+  if (pLower.includes('leon') || pLower.includes('jump') || pLower.includes('moon') || pLower.includes('trampolin')) {
+    return `Action-Highlight für Leon: Der **Jump Park Moon Fun Park** (Trampolinpark) im Einkaufszentrum in Zadar!`;
+  }
+
+  // 2. Semantische Suche nach Vektor-Ähnlichkeit
+  const results = queryRAGMemories(prompt, 3, 0.14);
+  if (results.length > 0) {
+    const facts = results.map((r) => `• ${r.memory.text}`).join('\n');
+    return `Hey ${userName}, dazu habe ich folgende gespeicherte Fakten in unserem Gedächtnis:\n\n${facts}`;
+  }
+
+  return null;
+}
+

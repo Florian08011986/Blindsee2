@@ -9,7 +9,7 @@
  *              per Header an generativelanguage.googleapis.com gesendet.
  */
 
-import { formatRAGContextForPrompt } from './memoryRAG';
+import { formatRAGContextForPrompt, generateLocalRAGAnswer } from './memoryRAG';
 
 export interface GeminiLocation {
   name: string;
@@ -33,7 +33,7 @@ export interface GeminiRequest {
 }
 
 export const GEMINI_KEY_STORAGE = 'gemini_api_key';
-const GEMINI_MODEL = 'gemini-3.8-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /** Liest den lokal gespeicherten Gemini-Schlüssel (leer, wenn keiner vorhanden ist). */
@@ -152,35 +152,50 @@ export async function callBackend(baseUrl: string, req: GeminiRequest): Promise<
   return text;
 }
 
-/** Statischer Offline-Text (Inhalt wie der Fallback in server.ts), klar als solcher gekennzeichnet. */
-export function buildOfflineFallback(locationName: string, reason: string): string {
+/** Statischer Offline-Text, klar als solcher gekennzeichnet. */
+export function buildOfflineFallback(
+  locationName: string,
+  reason: string,
+  userName: string = 'Florian',
+  assistantName: string = 'Luka'
+): string {
   const loc = locationName || 'Kroatien';
   return (
-    `**Offline-Info für ${loc}** _(KI nicht verbunden: ${reason})_\n\n` +
-    `• **Notrufe**: Allgemein **112**, Polizei **192**, Rettung **194**.\n` +
-    `• **Apotheken**: meist Mo–Sa 07:00–20:00 Uhr, mit wechselndem 24h-Notdienst.\n` +
-    `• **Karte**: Nutze das Filter-Menü für Sehenswürdigkeiten, Strände, Tankstellen, Krankenhäuser und mehr.\n\n` +
-    `Für KI-Antworten: Menü → Einstellungen → API-Schlüssel anpassen → eigenen Gemini-Schlüssel eintragen.`
+    `**Offline-Info für ${loc}**\n\n` +
+    `• **Wichtigste Notrufe**: Allgemein **112**, Polizei **192**, Rettung **194**, Giftnotruf **+385 1 2348 342**.\n` +
+    `• **Apotheken**: meist Mo–Sa 07:00–20:00 Uhr, mit 24h-Notdienst.\n` +
+    `• **Home Base**: Zaton Holiday Resort - Apartments (Nin bei Zadar).\n\n` +
+    `💡 _Hinweis: Für freie KI-Recherchen kannst du oben rechts über ℹ️ oder durch Eingabe von „API-Schlüssel“ deinen eigenen Gemini-Schlüssel eintragen._ [ACTION:OPEN_KEY_MODAL]`
   );
 }
 
-/** Orchestrierung: Server-Backend (/api/gemini) → lokaler Schlüssel → Offline-Fallback. */
+/** Orchestrierung: Server-Backend (/api/gemini) → lokaler Schlüssel → On-Device RAG → Offline-Fallback. */
 export async function askGemini(req: GeminiRequest): Promise<string> {
   const baseUrl = ((import.meta as any).env?.VITE_API_BASE_URL ?? '').toString().trim();
   const ragCtx = req.ragContext ?? formatRAGContextForPrompt(req.prompt);
   const enrichedReq: GeminiRequest = { ...req, ragContext: ragCtx };
 
+  // 1. Zuerst optionales Backend versuchen
   try {
     return await callBackend(baseUrl, enrichedReq);
   } catch (backendErr: any) {
+    // 2. Direktaufruf mit lokalem Gemini-Key versuchen
     const key = getStoredGeminiKey();
     if (key) {
       try {
         return await callGeminiDirect(key, enrichedReq);
       } catch (err: any) {
-        return buildOfflineFallback(req.location.name, `Gemini-Fehler: ${err?.message || 'unbekannt'}`);
+        console.warn('Gemini Direktaufruf fehlgeschlagen:', err);
       }
     }
-    return buildOfflineFallback(req.location.name, `Backend nicht erreichbar: ${backendErr?.message || 'unbekannt'}`);
+
+    // 3. On-Device RAG-Vektorgedächtnis prüfen (Antwortet sofort offline auf alle Urlaubs-Fragen!)
+    const localAnswer = generateLocalRAGAnswer(req.prompt, req.userName, req.assistantName);
+    if (localAnswer) {
+      return localAnswer;
+    }
+
+    // 4. Freundlicher Fallback ohne Menü-Verweis
+    return buildOfflineFallback(req.location.name, `Offline-Modus aktiv`, req.userName, req.assistantName);
   }
 }

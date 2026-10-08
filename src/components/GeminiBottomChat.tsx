@@ -26,7 +26,7 @@ import {
   Navigation,
   Brain
 } from 'lucide-react';
-import { Landmark } from '../utils';
+import { Landmark, getDistanceFromHomeBase, estimateDriveMinutes } from '../utils';
 import { askGemini } from '../geminiClient';
 import { renderChatMarkdown } from '../chatMarkdown';
 import { addMemory, detectRememberIntent } from '../memoryRAG';
@@ -40,9 +40,31 @@ interface PredefinedAction {
   isPacklistAction?: boolean;
   isHelpAction?: boolean;
   isMemoryAction?: boolean;
+  isFuelAction?: boolean;
+  isKeyAction?: boolean;
 }
 
 export const PREDEFINED_ACTIONS: PredefinedAction[] = [
+  {
+    id: 'home-base-flight',
+    label: 'Home Base (Zaton Resort) anfliegen',
+    glyph: '🏠',
+    prompt: 'Fliege zu unserer Home Base: Zaton Holiday Resort in Nin.'
+  },
+  {
+    id: 'fuel-arbitrage',
+    label: 'Sprit- & Spar-Rechner (CZ / DE / HR)',
+    glyph: '⛽',
+    prompt: 'Öffne den Sprit- und Spar-Rechner für unseren Kroatien-Urlaub.',
+    isFuelAction: true
+  },
+  {
+    id: 'api-key-config',
+    label: 'Gemini API-Schlüssel eintragen',
+    glyph: '🔑',
+    prompt: 'API-Schlüssel eintragen',
+    isKeyAction: true
+  },
   {
     id: 'hilf-funktionen',
     label: 'Hilf mir mit deinen Funktionen',
@@ -150,6 +172,8 @@ interface GeminiBottomChatProps {
   onOpenPacklist: () => void;
   onOpenHelp: () => void;
   onOpenMemory: () => void;
+  onOpenApiKeyModal: () => void;
+  onOpenFuelCalculator: () => void;
   onSetMapMode: (mode: '3d' | 'satellite') => void;
   onStartTour: () => void;
   onInteractionChange?: (isInteracting: boolean) => void;
@@ -169,6 +193,8 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   onOpenPacklist,
   onOpenHelp,
   onOpenMemory,
+  onOpenApiKeyModal,
+  onOpenFuelCalculator,
   onSetMapMode,
   onStartTour,
   onInteractionChange
@@ -181,7 +207,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     {
       id: 'welcome-intro-msg',
       sender: 'gemini',
-      text: `Hey ${userName || 'Florian'}! Ich bin ${assistantName || 'Luka'}, dein persönlicher Reisebegleiter für Kroatien. 🇭🇷✨\n\nFrag mich jederzeit nach 3D-Flügen, Stränden, Restaurants oder Notfall-Infrastruktur – oder sag einfach: „Hilf mir mit deinen Funktionen“!`,
+      text: `Hey ${userName || 'Florian'}! Ich bin ${assistantName || 'Luka'}, dein persönlicher Reisebegleiter für Kroatien.\n\nFrag mich nach unserer Home Base in Nin, 3D-Kameraflügen, Spritpreisen, der Packliste oder sag einfach: „Hilf mir mit deinen Funktionen“!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -223,7 +249,21 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
       executedAction = '🧠 Vektor-Gedächtnis geöffnet';
     }
 
-    // 3. Etwas ins Gedächtnis einbetten / merken
+    // 3. API-Schlüssel Dialog öffnen
+    if (/\[ACTION:OPEN_KEY_MODAL\]/i.test(cleanText) || /\[ACTION:OPEN_API_KEY\]/i.test(cleanText)) {
+      cleanText = cleanText.replace(/\[ACTION:OPEN_KEY_MODAL\]/gi, '').replace(/\[ACTION:OPEN_API_KEY\]/gi, '').trim();
+      onOpenApiKeyModal();
+      executedAction = '🔑 API-Schlüssel Dialog geöffnet';
+    }
+
+    // 4. Sprit- & Arbitrage-Rechner öffnen
+    if (/\[ACTION:OPEN_FUEL_CALCULATOR\]/i.test(cleanText)) {
+      cleanText = cleanText.replace(/\[ACTION:OPEN_FUEL_CALCULATOR\]/gi, '').trim();
+      onOpenFuelCalculator();
+      executedAction = '⛽ Sprit- & Spar-Rechner geöffnet';
+    }
+
+    // 5. Etwas ins Gedächtnis einbetten / merken
     const rememberMatch = cleanText.match(/\[ACTION:REMEMBER:(.*?)\]/i);
     if (rememberMatch) {
       const toRemember = rememberMatch[1].trim();
@@ -232,30 +272,35 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
       executedAction = `🧠 Im Vektor-Gedächtnis gespeichert: „${toRemember.slice(0, 32)}...“`;
     }
 
-    // 4. Packliste öffnen
+    // 6. Packliste öffnen
     if (/\[ACTION:OPEN_PACKLIST\]/i.test(cleanText)) {
       cleanText = cleanText.replace(/\[ACTION:OPEN_PACKLIST\]/gi, '').trim();
       onOpenPacklist();
       executedAction = '🎒 Packliste geöffnet';
     }
 
-    // 3. 3D-Kameraflug zu Ort
+    // 7. 3D-Kameraflug zu Ort (inkl. Zaton Home Base)
     const flyMatch = cleanText.match(/\[ACTION:FLY_TO:(.*?)\]/i);
     if (flyMatch) {
       const place = flyMatch[1].trim();
       cleanText = cleanText.replace(/\[ACTION:FLY_TO:(.*?)\]/gi, '').trim();
-      onFlyToNamedPlace(place);
-      executedAction = `🦅 3D-Flug zu ${place}`;
+      if (place.toLowerCase().includes('zaton') || place.toLowerCase().includes('base')) {
+        onFlyToNamedPlace('home-base-zaton');
+        executedAction = `🏠 3D-Flug zur Home Base (Zaton Resort)`;
+      } else {
+        onFlyToNamedPlace(place);
+        executedAction = `🦅 3D-Flug zu ${place}`;
+      }
     }
 
-    // 4. Tour starten
+    // 8. Tour starten
     if (/\[ACTION:START_TOUR\]/i.test(cleanText)) {
       cleanText = cleanText.replace(/\[ACTION:START_TOUR\]/gi, '').trim();
       onStartTour();
       executedAction = '🚗 3D-Tour gestartet';
     }
 
-    // 5. Map-Mode umschalten
+    // 9. Map-Mode umschalten
     const modeMatch = cleanText.match(/\[ACTION:MAP_MODE:(.*?)\]/i);
     if (modeMatch) {
       const mode = modeMatch[1].trim().toLowerCase();
@@ -277,8 +322,71 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     const trimmed = promptToSend.trim();
     if (!trimmed || isLoading) return;
 
+    // Fast-path client intercept for API key dialog
+    const norm = promptToSend.trim().toLowerCase();
+    if (
+      norm === 'api-schlüssel' ||
+      norm === 'api key' ||
+      norm === 'gemini key' ||
+      norm === 'schlüssel eintragen' ||
+      norm === 'api schlüssel'
+    ) {
+      onOpenApiKeyModal();
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: `msg-${Date.now()}`,
+          sender: 'user',
+          text: promptToSend.trim(),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        },
+        {
+          id: `resp-${Date.now()}`,
+          sender: 'gemini',
+          text: `Hier ist das Einstellungsfenster für deinen Google Gemini API-Schlüssel.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          actionExecuted: '🔑 API-Schlüssel Dialog geöffnet'
+        }
+      ]);
+      setInputText('');
+      setIsPlusMenuOpen(false);
+      setIsChatOverlayOpen(true);
+      return;
+    }
+
+    // Fast-path client intercept for Fuel & Arbitrage calculator
+    if (
+      norm === 'tanken' ||
+      norm === 'spritrechner' ||
+      norm === 'spar-rechner' ||
+      norm === 'sprit' ||
+      norm === 'benzin' ||
+      norm.includes('spritpreis')
+    ) {
+      onOpenFuelCalculator();
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: `msg-${Date.now()}`,
+          sender: 'user',
+          text: promptToSend.trim(),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        },
+        {
+          id: `resp-${Date.now()}`,
+          sender: 'gemini',
+          text: `Ich habe den Sprit- & Spar-Rechner (Tschechien vs. Deutschland vs. Kroatien) für dich geöffnet!`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          actionExecuted: '⛽ Sprit- & Spar-Rechner geöffnet'
+        }
+      ]);
+      setInputText('');
+      setIsPlusMenuOpen(false);
+      setIsChatOverlayOpen(true);
+      return;
+    }
+
     // Fast-path client intercept for help and function catalog
-    const norm = trimmed.toLowerCase();
     if (
       norm.includes('hilf mir mit deinen funktionen') ||
       norm.includes('hilf mir') ||
@@ -372,6 +480,21 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   };
 
   const handleSelectPredefined = (action: PredefinedAction) => {
+    if (action.isKeyAction) {
+      onOpenApiKeyModal();
+      setIsPlusMenuOpen(false);
+      return;
+    }
+    if (action.isFuelAction) {
+      onOpenFuelCalculator();
+      setIsPlusMenuOpen(false);
+      return;
+    }
+    if (action.id === 'home-base-flight') {
+      onFlyToNamedPlace('home-base-zaton');
+      setIsPlusMenuOpen(false);
+      return;
+    }
     if (action.isHelpAction) {
       onOpenHelp();
     }
@@ -415,10 +538,14 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
                     <h3 className="font-bold text-xs sm:text-sm text-white truncate">
                       {activeLandmark.name}
                     </h3>
-                    <div className="flex items-center gap-1.5 text-[10px] text-cyan-300 font-medium">
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-cyan-300 font-medium">
                       <span>{activeLandmark.category}</span>
-                      {activeLandmark.distanceKm !== undefined && (
-                        <span>• ca. {activeLandmark.distanceKm} km entfernt</span>
+                      {activeLandmark.id === 'home-base-zaton' ? (
+                        <span className="text-amber-400 font-bold">• 🏠 Operatives Hauptquartier</span>
+                      ) : (
+                        <span className="text-amber-300 font-medium">
+                          • 🏠 {getDistanceFromHomeBase(activeLandmark.lat, activeLandmark.lng)} km ab Zaton Base (ca. {estimateDriveMinutes(getDistanceFromHomeBase(activeLandmark.lat, activeLandmark.lng))} Min)
+                        </span>
                       )}
                     </div>
                   </div>

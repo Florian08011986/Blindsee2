@@ -109,6 +109,51 @@ export const CROATIA_COASTAL_WELCOME_CAMERA = {
   heading: 142
 };
 
+// Home Base: Zaton Holiday Resort - Apartments (Nin bei Zadar)
+export const HOME_BASE_COORDS = {
+  id: 'home-base-zaton',
+  name: 'Home Base: Zaton Holiday Resort',
+  address: 'Dražnikova ul. 78, 23232 Nin, Kroatien',
+  lat: 44.2272,
+  lng: 15.1703,
+  reservationCode: 'PH30024257',
+  camAltitude: 95,
+  camRange: 420,
+  camTilt: 52,
+  camHeading: 210
+};
+
+/**
+ * Berechnet die Distanz in Kilometern zwischen zwei Koordinaten (Haversine-Formel).
+ */
+export function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Erdradius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+/**
+ * Berechnet die Distanz eines Ortes zur Home Base (Zaton Resort).
+ */
+export function getDistanceFromHomeBase(lat: number, lng: number): number {
+  return calculateDistanceKm(HOME_BASE_COORDS.lat, HOME_BASE_COORDS.lng, lat, lng);
+}
+
+/**
+ * Schätzt die typische Fahrzeit in Minuten basierend auf Straßen-Distanz.
+ */
+export function estimateDriveMinutes(distanceKm: number): number {
+  if (distanceKm <= 5) return Math.max(5, Math.round((distanceKm / 35) * 60));
+  if (distanceKm <= 25) return Math.round((distanceKm / 45) * 60);
+  if (distanceKm <= 70) return Math.round((distanceKm / 60) * 60);
+  return Math.round((distanceKm / 75) * 60);
+}
+
 /**
  * Computes marker altitude.
  */

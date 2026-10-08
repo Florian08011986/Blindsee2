@@ -28,13 +28,15 @@ import { BlackScreenIntro } from './components/BlackScreenIntro';
 import { HelpGuideModal } from './components/HelpGuideModal';
 import { PacklistWidget } from './components/PacklistWidget';
 import { MemoryManagerModal } from './components/MemoryManagerModal';
+import { FuelArbitrageModal } from './components/FuelArbitrageModal';
 import { ALL_CROATIA_POIS, getPoisInRadius } from './croatiaLocations';
 import {
   Landmark,
   loadGoogleMapsScript,
   getLandmarkMarkerAltitude,
   getHaversineDistance,
-  CROATIA_COASTAL_WELCOME_CAMERA
+  CROATIA_COASTAL_WELCOME_CAMERA,
+  HOME_BASE_COORDS
 } from './utils';
 
 // Provisioned Google Maps Demo Key for AI Studio (from GenerateMapsDemoKey)
@@ -67,8 +69,8 @@ export default function App() {
     lat: number;
     lng: number;
   }>(() => {
-    // Default to Split / Dalmatien (Zentraler Ausgangspunkt der Adriaküste)
-    return { name: 'Split (Dalmatien)', lat: 43.5081, lng: 16.4402 };
+    // Default to Home Base: Zaton Holiday Resort - Apartments (Nin / Zadar)
+    return { name: 'Zaton Resort (Nin / Zadar)', lat: HOME_BASE_COORDS.lat, lng: HOME_BASE_COORDS.lng };
   });
 
   const [radiusKm, setRadiusKm] = useState<number>(25);
@@ -108,6 +110,7 @@ export default function App() {
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
   const [showPacklist, setShowPacklist] = useState<boolean>(false);
   const [showMemoryModal, setShowMemoryModal] = useState<boolean>(false);
+  const [showFuelModal, setShowFuelModal] = useState<boolean>(false);
   const [isChatInteracting, setIsChatInteracting] = useState<boolean>(false);
 
   // =========================================================================
@@ -240,10 +243,27 @@ export default function App() {
     }
   }, []);
 
+  const handleFlyToHomeBase = useCallback(() => {
+    setCurrentLocation({ name: 'Zaton Resort (Nin / Zadar)', lat: HOME_BASE_COORDS.lat, lng: HOME_BASE_COORDS.lng });
+    flyCameraTo(
+      { lat: HOME_BASE_COORDS.lat, lng: HOME_BASE_COORDS.lng, altitude: 25 },
+      HOME_BASE_COORDS.camRange,
+      HOME_BASE_COORDS.camTilt,
+      HOME_BASE_COORDS.camHeading
+    );
+    setFlightStatus('Flug zur Home Base: Zaton Holiday Resort (Nin)');
+    setTimeout(() => setFlightStatus(''), 4000);
+  }, [flyCameraTo]);
+
   const handleFlyToNamedPlace = useCallback(
     (placeName: string) => {
       const q = placeName.toLowerCase().trim();
       if (!q) return;
+
+      if (q.includes('base') || q.includes('zaton') || q.includes('hotel') || q.includes('resort')) {
+        handleFlyToHomeBase();
+        return;
+      }
 
       const found = ALL_CROATIA_POIS.find(
         (p) =>
@@ -259,6 +279,7 @@ export default function App() {
 
       // Famous fallback hubs across Croatia
       const hubList = [
+        { key: 'zaton', name: 'Home Base: Zaton Resort (Nin)', lat: 44.2272, lng: 15.1703, range: 420, tilt: 52, heading: 210 },
         { key: 'dubrovnik', name: 'Dubrovnik (Altstadt)', lat: 42.6412, lng: 18.1084, range: 450, tilt: 55, heading: 140 },
         { key: 'split', name: 'Split (Diokletianpalast)', lat: 43.5081, lng: 16.4402, range: 450, tilt: 55, heading: 120 },
         { key: 'rovinj', name: 'Rovinj (Istrien)', lat: 45.0812, lng: 13.6387, range: 450, tilt: 55, heading: 90 },
@@ -653,6 +674,7 @@ export default function App() {
       {/* 2. CENTERED APP HEADER WITH DISCREET INFO (ℹ️) BUTTON & AUTO-HIDE ON INTERACTION */}
       <CleanHeader
         onOpenInfo={() => setShowHelpModal(true)}
+        onFlyToHomeBase={handleFlyToHomeBase}
         isTouring={isTouring}
         assistantName={assistantName}
         isVisible={isHeaderVisible}
@@ -677,6 +699,8 @@ export default function App() {
         onOpenPacklist={() => setShowPacklist(true)}
         onOpenHelp={() => setShowHelpModal(true)}
         onOpenMemory={() => setShowMemoryModal(true)}
+        onOpenApiKeyModal={() => setShowApiKeyModal(true)}
+        onOpenFuelCalculator={() => setShowFuelModal(true)}
         onSetMapMode={(mode) => setMapMode(mode)}
         onStartTour={startTour3D}
         onInteractionChange={(interacting) => setIsChatInteracting(interacting)}
@@ -736,6 +760,12 @@ export default function App() {
         onClose={() => setShowMemoryModal(false)}
         assistantName={assistantName}
         userName={userName}
+      />
+
+      {/* 8. SPRIT- & SPAR-RECHNER (TSCHECHIEN / DEUTSCHLAND / KROATIEN) */}
+      <FuelArbitrageModal
+        isOpen={showFuelModal}
+        onClose={() => setShowFuelModal(false)}
       />
 
       {/* 5. API KEY MODAL */}

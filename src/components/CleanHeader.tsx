@@ -5,10 +5,11 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Info } from 'lucide-react';
+import { Info, Home } from 'lucide-react';
 
 interface CleanHeaderProps {
   onOpenInfo: () => void;
+  onFlyToHomeBase?: () => void;
   isTouring?: boolean;
   assistantName: string;
   isVisible?: boolean;
@@ -16,6 +17,7 @@ interface CleanHeaderProps {
 
 export const CleanHeader: React.FC<CleanHeaderProps> = ({
   onOpenInfo,
+  onFlyToHomeBase,
   isTouring,
   assistantName,
   isVisible = true
@@ -31,8 +33,15 @@ export const CleanHeader: React.FC<CleanHeaderProps> = ({
           className="absolute top-3 inset-x-0 z-40 pointer-events-none flex items-center justify-center px-4 select-none"
         >
           <div className="relative max-w-md w-full flex items-center justify-between pointer-events-auto">
-            {/* Left: Spacer for perfect centering */}
-            <div className="w-9 shrink-0" />
+            {/* Left: Home Base (Zaton Resort) Button */}
+            <button
+              onClick={onFlyToHomeBase}
+              className="relative px-2.5 h-9 flex items-center gap-1.5 rounded-full bg-slate-950/85 hover:bg-amber-950/40 text-amber-400 backdrop-blur-md border border-amber-500/30 text-[11px] font-bold shadow-lg transition-all active:scale-95 cursor-pointer shrink-0"
+              title="Zurück zur Home Base: Zaton Holiday Resort (Nin)"
+            >
+              <Home className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="hidden sm:inline">Base</span>
+            </button>
 
             {/* Center: App Title & Powered by Florian Finke */}
             <div className="text-center px-4 py-1.5 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-white/10 shadow-xl flex flex-col items-center justify-center">
