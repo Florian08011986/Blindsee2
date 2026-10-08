@@ -156,7 +156,14 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   const [inputText, setInputText] = useState('');
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
+    {
+      id: 'welcome-intro-msg',
+      sender: 'bot',
+      text: "Hey, ich bin Florian's KI-Assistent, und bin hier in dieser App euer Reisebegleiter. 🇭🇷✨\n\nIch bin dafür verantwortlich, euch in jeder Lebenslage beziehungsweise in eurem Urlaub zur Seite zu stehen, damit es euch an nichts fehlt.",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  ]);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
   const [isDetailCardFolded, setIsDetailCardFolded] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);

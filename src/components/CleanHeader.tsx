@@ -40,14 +40,12 @@ export const CleanHeader: React.FC<CleanHeaderProps> = ({
           </button>
         </div>
 
-        {/* Center: Title & Florian Finke Copyright */}
-        <div className="pointer-events-auto text-center px-2 py-1 rounded-2xl bg-slate-950/80 backdrop-blur-md border border-white/10 shadow-xl mx-auto">
-          <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-white drop-shadow-md">
-            Kroatien Reisebegleiter
+        {/* Center: Title */}
+        <div className="pointer-events-auto text-center px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 shadow-xl mx-auto">
+          <h1 className="text-xs sm:text-sm md:text-base font-black tracking-tight text-white drop-shadow-md flex items-center justify-center gap-1.5">
+            <span>🇭🇷</span>
+            <span>Kroatien Reisebegleiter</span>
           </h1>
-          <p className="text-[8px] sm:text-[9px] md:text-[10px] font-medium text-slate-300 tracking-wide">
-            Copyright bei Florian Finke
-          </p>
         </div>
 
         {/* Right: Sleek Menu Button */}
