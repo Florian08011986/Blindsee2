@@ -106,6 +106,7 @@ export default function App() {
 
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
   const [showPacklist, setShowPacklist] = useState<boolean>(false);
+  const [isChatInteracting, setIsChatInteracting] = useState<boolean>(false);
 
   // =========================================================================
   // 2. POIs IM 25 KM RADIUS BERECHNEN
@@ -156,6 +157,16 @@ export default function App() {
   const [isFlying, setIsFlying] = useState<boolean>(false);
   const [flightStatus, setFlightStatus] = useState<string>('Bereit für Kroatien');
   const [activeLandmark, setActiveLandmark] = useState<Landmark | null>(null);
+
+  // Header is visible in idle main view, but automatically hidden during user interaction
+  const isHeaderVisible =
+    !isChatInteracting &&
+    !activeLandmark &&
+    !isTouring &&
+    !showIntro &&
+    !showHelpModal &&
+    !showPacklist &&
+    !showApiKeyModal;
 
   const mapElementRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -637,11 +648,12 @@ export default function App() {
         </div>
       </main>
 
-      {/* 2. CENTERED APP HEADER WITH DISCREET INFO (ℹ️) BUTTON */}
+      {/* 2. CENTERED APP HEADER WITH DISCREET INFO (ℹ️) BUTTON & AUTO-HIDE ON INTERACTION */}
       <CleanHeader
         onOpenInfo={() => setShowHelpModal(true)}
         isTouring={isTouring}
         assistantName={assistantName}
+        isVisible={isHeaderVisible}
       />
 
       {/* 3. GEMINI CONVERSATIONAL TRAVEL COMPANION (100% Conversational Agency) */}
@@ -664,6 +676,7 @@ export default function App() {
         onOpenHelp={() => setShowHelpModal(true)}
         onSetMapMode={(mode) => setMapMode(mode)}
         onStartTour={startTour3D}
+        onInteractionChange={(interacting) => setIsChatInteracting(interacting)}
       />
 
       {/* 4. BLACK SCREEN INTRO / CINEMATIC ONBOARDING (Strahlend weiß auf Tiefschwarz) */}

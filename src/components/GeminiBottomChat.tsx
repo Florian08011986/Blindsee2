@@ -141,6 +141,7 @@ interface GeminiBottomChatProps {
   onOpenHelp: () => void;
   onSetMapMode: (mode: '3d' | 'satellite') => void;
   onStartTour: () => void;
+  onInteractionChange?: (isInteracting: boolean) => void;
 }
 
 export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
@@ -157,7 +158,8 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   onOpenPacklist,
   onOpenHelp,
   onSetMapMode,
-  onStartTour
+  onStartTour,
+  onInteractionChange
 }) => {
   const [inputText, setInputText] = useState('');
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
@@ -177,6 +179,12 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   const [isDetailCardFolded, setIsDetailCardFolded] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Notify parent about user interaction state to auto-hide header
+  const isInteracting = isChatOverlayOpen || isPlusMenuOpen || isLoading || Boolean(activeLandmark);
+  useEffect(() => {
+    onInteractionChange?.(isInteracting);
+  }, [isInteracting, onInteractionChange]);
 
   // Auto-scroll chat when history updates
   useEffect(() => {
