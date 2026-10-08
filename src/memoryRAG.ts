@@ -32,7 +32,7 @@ export interface MemoryRecord {
   isDefault?: boolean;
 }
 
-const STORAGE_KEY = 'kroatien_rag_vector_memory';
+const STORAGE_KEY = 'kroatien_rag_vector_memory_v3';
 const VECTOR_DIM = 128;
 
 // =========================================================================
@@ -106,57 +106,160 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
 }
 
 // =========================================================================
-// 2. GEMEINSAME BASIS-GEDÄCHTNIS-EINTRÄGE (FLORIANS KROATIEN-DOKTRIN & TIPPS)
+// 2. GEMEINSAME BASIS-GEDÄCHTNIS-EINTRÄGE (FEINGLIEDRIGE CHUNKS AUS DEM REISEPLAN)
 // =========================================================================
 
 const DEFAULT_MEMORIES_DATA: Array<{ text: string; category: MemoryCategory }> = [
+  // --- REISEDATEN, ANREISE & FLUG ---
   {
-    text: 'Florian hat festgelegt: Vor Abflug zwingend Badeschuhe und Neoprenschuhe für Kiesel- und Felsstrände einpacken, um vor scharfen Steinen und Seeigeln geschützt zu sein.',
+    text: 'Reisedaten Kroatien: Unser Familienurlaub findet vom 12. bis 19. Oktober 2026 (Montag bis Montag) in Nord-Dalmatien statt.',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Abfahrt zu Hause: Am Montag, 12.10.2026 fahren wir gegen 04:45 Uhr morgens mit dem Auto los Richtung Prag.',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Parkplatz Prag Ankunftszeit: Am Montag, 12.10.2026 müssen wir um 07:00 Uhr am gebuchten Parkplatz in Prag sein (Fahrzeit beträgt ca. 1:50 Stunden).',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Wichtig für die Fahrt: Unbedingt daran denken, den Kindersitz für die Fahrt und für den Mietwagen mitzunehmen!',
     category: 'packliste'
   },
   {
-    text: 'Florian hat festgelegt: Auf kroatischen Autobahnen spart die ENC-Mautbox oder kontaktlose Kreditkartenzahlung an den Mautstationen sehr viel Wartezeit gegenüber Bargeld.',
+    text: 'Parkplatz Prag Adresse: Gebuchter Parkplatz ist GO parking, s.r.o, Adresse: Ke Kopanině 406, 252 67 Tuchoměřice (direkt am Flughafen Prag Václav Havel).',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Parkplatz Prag Schranken-PIN: Der PIN-Code für die Einfahrtschranke bei GO parking lautet PIN 297497. Der Go Parking Voucher liegt digital vor.',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Hinflug nach Zadar: Abflug ist am Montag, 12.10.2026 um 09:50 Uhr ab Flughafen Prag nach Zadar (Kroatien).',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Flug-Sitzplätze: Unsere gebuchten Sitzplätze im Flugzeug nach Zadar sind 15 B, 15 C, 15 D, 15 E und 15 F. Flugtickets liegen digital vor.',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Landung in Zadar: Geplante Ankunfts- und Landezeit am Flughafen Zadar ist am Montag, 12.10.2026 um 11:15 Uhr.',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Mietwagen Abholung: Mietwagen direkt nach der Landung am Flughafen Zadar abholen bei Avis / Car Hire Market.',
+    category: 'reisedaten'
+  },
+  {
+    text: 'Mietwagen Buchungsnummer: Buchungsnummer für den Avis Mietwagen lautet CN982799134120. Mietwagen-Voucher liegt digital vor.',
+    category: 'reisedaten'
+  },
+
+  // --- UNTERKUNFT & RESORT ---
+  {
+    text: 'Unterkunft Name: Zaton Holiday Resort - Apartments. Unsere feste Urlaubsresidenz für die Woche vom 12. bis 19. Oktober 2026.',
+    category: 'unterkunft'
+  },
+  {
+    text: 'Unterkunft Adresse: Zaton Holiday Resort, Dražnikova ul. 78, 23232 Nin, Kroatien (ca. 15 km nördlich von Zadar).',
+    category: 'unterkunft'
+  },
+  {
+    text: 'Unterkunft Reservierungscode: Reservation Code für Zaton Holiday Resort Apartments lautet PH30024257.',
+    category: 'unterkunft'
+  },
+  {
+    text: 'Unterkunft Lage & Umgebung: Das Resort liegt direkt am Meer mit flach abfallendem Sand- und Kiesstrand, ideal und sicher für Kinder (Leon, Mia und Lea).',
+    category: 'unterkunft'
+  },
+
+  // --- FESTE TERMINE & AKTIVITÄTEN ---
+  {
+    text: 'Fester Termin Bootsausflug: Freitag, 16.10.2026 um 08:00 Uhr morgens ist unser fester Bootsausflug gebucht. Ticket liegt digital vor.',
+    category: 'aktivitaet'
+  },
+  {
+    text: 'Zadar Altstadt & Shopping: Schlendern durch die historische Altstadt von Zadar und ein lokales Kroatien-Trikot für die Kinder kaufen.',
+    category: 'aktivitaet'
+  },
+  {
+    text: 'Must-See Zadar zum Sonnenuntergang: Meeresorgel (Morske orgulje) und der Gruß an die Sonne (Pozdrav Suncu) an der Uferpromenade von Zadar pünktlich zum Sonnenuntergang besuchen.',
+    category: 'aktivitaet'
+  },
+  {
+    text: 'Bäckerei Geheimtipp Golub: Günstige und köstliche Backwaren und Burek vom letzten Besuch gibt es bei der Bäckerei "Golub - Pekarna Bakery" nördlich von Zadar (Maps: https://maps.app.goo.gl/7PV9BiefGq7DweKq8).',
     category: 'florian_tipps'
   },
   {
-    text: 'Florian hat festgelegt: Da Leon, Mia und Lea auf der Kroatien-Reise dabei sind, müssen alle Notrufnummern jederzeit sofort griffbereit sein: Feuerwehr 193, Polizei 192, Krankenwagen und Notarzt 194, Giftnotruf Kroatien (+385 1 2348 342, 24h Giftkontrollzentrum KBC Zagreb), Seenotrettung 195, Pannenhilfe HAK 1987 und Allgemeiner Notruf 112.',
-    category: 'florian_tipps'
+    text: 'Tagesausflug Plitvicer Seen: Weltberühmter Nationalpark Plitvicer Seen mit 16 smaragdgrünen Kaskadenseen und Wasserfällen (Maps: https://maps.app.goo.gl/QYrfhnKWRmzYxPhp8).',
+    category: 'aktivitaet'
   },
   {
-    text: 'Florian hat festgelegt: Notrufnummern in Kroatien sind gebührenfrei erreichbar: Allgemein 112, Polizei 192, Notarzt 194, Seenotrettung 195, Pannenhilfe HAK 1987.',
-    category: 'florian_tipps'
+    text: 'Tagesausflug Nationalpark Krka: Spektakuläre Fluss- und Wasserfalllandschaft mit Skradinski Buk (Maps: https://maps.app.goo.gl/Rv8V4wGqxcHqVfCD8).',
+    category: 'aktivitaet'
   },
   {
-    text: 'Florian hat festgelegt: Der KI-Reisebegleiter übernimmt selbstverständlich auch die Ausflugs-, Sicherheits- und Tagesplanung für die drei Kinder Leon, Mia und Lea (flache Kiesstrände, Schatten, kindgerechte Highlights).',
+    text: 'Aussichtsplattform Krka: Kurz vor Krka liegt die fantastische Aussichtsplattform "Vidikovac Krka - Istok" bei Lozovac mit Panoramablick auf die Schlucht (Maps: https://maps.app.goo.gl/VVu3SpRCKP39EEK48).',
+    category: 'aktivitaet'
+  },
+
+  // --- KINDER-HIGHLIGHTS (LEON, MIA & LEA) ---
+  {
+    text: 'Kinder Schlechtwetter-Plan Lea: Bei Regen oder starker Hitze gibt es für Lea einen kleinen Indoorspielplatz im Einkaufszentrum Supernova Zadar (Twister Fun Park, Maps: https://maps.app.goo.gl/c17hxuW5Uzg6PBJH8).',
+    category: 'aktivitaet'
+  },
+  {
+    text: 'Kinder Action-Highlight Leon: Absolutes Highlight für Leon ist der Jump Park / Moon Fun Park (Trampolin- und Actionpark) im Einkaufszentrum in Zadar (Maps: https://maps.app.goo.gl/c17hxuW5Uzg6PBJH8).',
+    category: 'aktivitaet'
+  },
+  {
+    text: 'Kinder-Verantwortung: Der KI-Reisebegleiter übernimmt aktiv die Ausflugs-, Sicherheits-, Pausen- und Tagesplanung für Leon, Mia und Lea.',
     category: 'praeferenz'
   },
+
+  // --- SICHERHEIT & NOTRUFNUMMERN ---
   {
-    text: 'Florians vollständige Packliste: Personalausweis, Portmonee mit Geld, Krankenkassenkarte, Handy, Ladekabel, 1-2 Powerbanks, Kopfhörer, Raucherzeug, Bauchtasche, Unterhosen, Socken, T-Shirts, Pullover, lange und kurze Hosen, Sonnenbrille, dünne Jacke, Wechselschuhe, Zahnbürste, Zahnpasta, Duschgel, Shampoo, Deo, Haarspray (<150 ml), Haarbürste, Medizin, Nagelknipser, Badehose, schwarze Badeschuhe, Mini-Handtuch, kurzer Schlafanzug, Buch, Trinkflasche und Lochsäge.',
+    text: 'Notrufnummern Kroatien: Feuerwehr 193 (Vatrogasci), Polizei 192 (Policija), Notarzt/Krankenwagen 194 (Hitna), EU-Notruf 112, Seenotrettung 195, Pannenhilfe HAK 1987.',
+    category: 'florian_tipps'
+  },
+  {
+    text: 'Giftnotruf Kroatien: Bei Vergiftungen oder giftigen Bissen/Stichen (z.B. Petermännchen, Seeigel, giftige Pflanzen) sofort den Giftnotruf Kroatien anrufen: +385 1 2348 342 (24h Giftkontrollzentrum KBC Zagreb).',
+    category: 'florian_tipps'
+  },
+  {
+    text: 'Florian hat festgelegt: Vor Abflug zwingend Badeschuhe und Neoprenschuhe (z.B. die schwarzen Wasserschuhe) für Kiesel- und Felsstrände einpacken, um vor scharfen Steinen und Seeigeln geschützt zu sein.',
+    category: 'packliste'
+  },
+  {
+    text: 'Florian hat festgelegt: Auf kroatischen Autobahnen spart die ENC-Mautbox oder kontaktlose Kartenzahlung an den Mautstationen sehr viel Wartezeit gegenüber Bargeld.',
+    category: 'florian_tipps'
+  },
+
+  // --- PACKLISTE & TO-DO CHECKLISTE ---
+  {
+    text: 'Florians Packliste Wichtiges & Dokumente: Personalausweis, Portmonee mit Geld, Krankenkassenkarte, Handy, Ladekabel, 1-2 Powerbanks/externe Akkus, Kopfhörer, Raucherzeug, kleine Bauchtasche.',
+    category: 'packliste'
+  },
+  {
+    text: 'Florians Packliste Kleidung: Unterhosen, Socken, T-Shirts, Pullover, lange und kurze Hosen, Sonnenbrille, dünne Jacke, Wechselschuhe.',
+    category: 'packliste'
+  },
+  {
+    text: 'Florians Packliste Badsachen & Hygiene: Zahnbürste, Zahnpasta, Duschgel, Shampoo, Deo, Haarspray (unter 150 ml), Haarbürste, persönliche Medizin, Nagelknipser.',
+    category: 'packliste'
+  },
+  {
+    text: 'Florians Packliste Baden & Schlafen: Badehose, schwarze Badeschuhe, Mini-Handtuch, kurzer Schlafanzug.',
+    category: 'packliste'
+  },
+  {
+    text: 'Florians Packliste Beschäftigung & Werkzeug: Buch, Trinkflasche und Lochsäge.',
     category: 'packliste'
   },
   {
     text: 'Florians To-Do-Checkliste vor der Abreise: Blumen gießen, offene Flaschen wegbringen, Müll rausbringen und prüfen, ob alles auf dem Balkon regensicher ist.',
     category: 'packliste'
-  },
-  {
-    text: 'Florians Geheimtipp Split: Die Riva-Promenade und den Diokletianspalast am Abend im goldenen Licht besuchen; für spektakulären Sonnenuntergang auf den Marjan-Aussichtspunkt gehen.',
-    category: 'florian_tipps'
-  },
-  {
-    text: 'Florians Ausflugs-Tipp: Tickets für die Krka-Wasserfälle und Nationalpark Plitvicer Seen unbedingt vorab online buchen, um lange Warteschlangen am Eingang zu umgehen.',
-    category: 'aktivitaet'
-  },
-  {
-    text: 'Florians Tankstellen-Tipp: Spritpreise bei INA oder Petrol im Landesinneren sind staatlich reguliert (Super 95 ca. 1,48 €/L, Diesel ca. 1,42 €/L) und oft günstiger als direkt auf der Autobahnraststätte.',
-    category: 'florian_tipps'
-  },
-  {
-    text: 'Florians Währungs-Tipp: In Kroatien wird mit Euro (€) bezahlt. Kartenzahlung ist nahezu überall möglich, für kleine Strandbars, Kioske und Parkautomaten empfiehlt sich 20–50 € Bargeld.',
-    category: 'florian_tipps'
-  },
-  {
-    text: 'Reisepräferenz: Wir lieben idyllische, ruhige Badebuchten, glasklares türkisfarbenes Wasser und authentische dalmatinische Konobas mit frischem Fisch und Peka.',
-    category: 'praeferenz'
   }
 ];
 
@@ -265,8 +368,8 @@ export interface RAGSearchResult {
  */
 export function queryRAGMemories(
   query: string,
-  topK: number = 4,
-  minScore: number = 0.12
+  topK: number = 8,
+  minScore: number = 0.10
 ): RAGSearchResult[] {
   if (!query || !query.trim()) return [];
 
@@ -288,8 +391,8 @@ export function queryRAGMemories(
 /**
  * Erzeugt einen formatierten Markdown-Kontextblock für den System-Prompt von Gemini.
  */
-export function formatRAGContextForPrompt(query: string, topK: number = 4): string {
-  const results = queryRAGMemories(query, topK, 0.14);
+export function formatRAGContextForPrompt(query: string, topK: number = 8): string {
+  const results = queryRAGMemories(query, topK, 0.10);
   if (results.length === 0) return '';
 
   const bulletPoints = results
