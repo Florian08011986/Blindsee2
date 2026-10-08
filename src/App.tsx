@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { getStoredGeminiKey, setStoredGeminiKey } from './geminiClient';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   MapPin,
@@ -115,6 +116,20 @@ export default function App() {
   const [apiKey, setApiKey] = useState<string>(getInitialApiKey);
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
   const [keyInputValue, setKeyInputValue] = useState<string>('');
+  const [geminiKeyInput, setGeminiKeyInput] = useState<string>('');
+  const [hasGeminiKey, setHasGeminiKey] = useState<boolean>(() => getStoredGeminiKey() !== '');
+
+  // Erststart: Schlüssel-Dialog einmalig automatisch öffnen, damit der KI-Chat sofort eingerichtet werden kann
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('onboarding_v1') && getStoredGeminiKey() === '') {
+        setShowApiKeyModal(true);
+      }
+      localStorage.setItem('onboarding_v1', '1');
+    } catch {
+      /* localStorage nicht verfügbar: ignorieren */
+    }
+  }, []);
   const [mapsLoaded, setMapsLoaded] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -474,6 +489,12 @@ export default function App() {
     if (isTouring) stopTour3D();
   };
 
+  // gmp-map-3d erwartet center als Objekt (LatLngAltitudeLiteral); memoisiert, damit Re-Renders die Kamera nicht zurücksetzen
+  const mapCenter = useMemo(
+    () => ({ lat: currentLocation.lat, lng: currentLocation.lng, altitude: 25 }),
+    [currentLocation.lat, currentLocation.lng]
+  );
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-950 font-sans select-none">
       {/* 1. MAP ENGINE 3D CONTAINER */}
@@ -484,11 +505,11 @@ export default function App() {
               ref={(el: any) => {
                 mapElementRef.current = el;
               }}
-              mode={mapMode === '3d' ? 'hybrid' : mapMode}
-              heading="45"
-              tilt="52"
-              range="4800"
-              center={`${currentLocation.lat},${currentLocation.lng},25`}
+              mode={(mapMode === '3d' ? 'hybrid' : mapMode).toUpperCase()}
+              heading={45}
+              tilt={52}
+              range={4800}
+              center={mapCenter}
               style={{ width: '100%', height: '100%', display: 'block' }}
             />
           ) : (
@@ -612,7 +633,7 @@ export default function App() {
               <div className="flex items-center justify-between pb-2 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <Key className="w-5 h-5 text-cyan-400" />
-                  <h3 className="font-bold text-sm">Google Maps API-Schlüssel</h3>
+                  <h3 className="font-bold text-sm">API-Schlüssel (Karte &amp; KI-Chat)</h3>
                 </div>
                 <button
                   onClick={() => setShowApiKeyModal(false)}
@@ -635,6 +656,35 @@ export default function App() {
                 className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/20 text-xs text-white outline-none focus:border-cyan-400 font-mono"
               />
 
+              <div className="pt-2 space-y-2 border-t border-white/10">
+                <h4 className="font-bold text-xs">Gemini API-Schlüssel (KI-Chat)</h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {hasGeminiKey
+                    ? 'Ein Gemini-Schlüssel ist auf diesem Gerät gespeichert.'
+                    : 'Für KI-Antworten im Chat: eigenen Gemini-Schlüssel eintragen. Er bleibt nur auf diesem Gerät.'}
+                </p>
+                <input
+                  type="password"
+                  value={geminiKeyInput}
+                  onChange={(e) => setGeminiKeyInput(e.target.value)}
+                  placeholder="Gemini-Schlüssel eingeben..."
+                  autoComplete="off"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/20 text-xs text-white outline-none focus:border-cyan-400 font-mono"
+                />
+                {hasGeminiKey && (
+                  <button
+                    onClick={() => {
+                      setStoredGeminiKey('');
+                      setHasGeminiKey(false);
+                      setGeminiKeyInput('');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold cursor-pointer"
+                  >
+                    Gemini-Schlüssel entfernen
+                  </button>
+                )}
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   onClick={() => {
@@ -653,6 +703,10 @@ export default function App() {
                     if (keyInputValue.trim()) {
                       localStorage.setItem('gmp_custom_api_key', keyInputValue.trim());
                       setApiKey(keyInputValue.trim());
+                    }
+                    if (geminiKeyInput.trim()) {
+                      setStoredGeminiKey(geminiKeyInput);
+                      setHasGeminiKey(true);
                     }
                     setShowApiKeyModal(false);
                     window.location.reload();

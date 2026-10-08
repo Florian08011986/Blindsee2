@@ -24,6 +24,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { Landmark } from '../utils';
+import { askGemini } from '../geminiClient';
+import { renderChatMarkdown } from '../chatMarkdown';
 
 interface PredefinedAction {
   id: string;
@@ -186,26 +188,19 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const replyText =
+        (await askGemini({
           prompt: trimmed,
           location: {
             name: currentLocationName,
             lat: currentLocationCoords.lat,
             lng: currentLocationCoords.lng
           },
-          activeLandmark: activeLandmark ? activeLandmark.name : null,
           history: chatHistory.slice(-4).map((m) => ({
-            role: m.sender === 'user' ? 'user' : 'model',
+            role: m.sender === 'user' ? ('user' as const) : ('model' as const),
             text: m.text
           }))
-        })
-      });
-
-      const data = await response.json();
-      const replyText = data.reply || data.error || 'Antwort konnte nicht geladen werden.';
+        })) || 'Antwort konnte nicht geladen werden.';
 
       const geminiMessage: ChatMessage = {
         id: `reply-${Date.now()}`,
@@ -425,7 +420,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
                             : 'bg-white/10 text-slate-100 rounded-bl-xs border border-white/10'
                         }`}
                       >
-                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                        <p className="whitespace-pre-wrap">{msg.sender === 'gemini' ? renderChatMarkdown(msg.text) : msg.text}</p>
                       </div>
                       <span className="text-[9px] text-slate-400 px-1 mt-0.5">
                         {msg.timestamp}
