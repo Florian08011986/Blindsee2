@@ -3,33 +3,34 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { SlidersHorizontal, MapPin, Compass, Sparkles, X } from 'lucide-react';
+import React from 'react';
+import { MapPin, Info, Sparkles } from 'lucide-react';
 
 interface CleanHeaderProps {
-  onOpenMenu: () => void;
-  activeCategoriesCount: number;
+  onOpenInfo: () => void;
   currentLocationName: string;
   isTouring?: boolean;
+  assistantName: string;
+  onOpenLocationSelect?: () => void;
 }
 
 export const CleanHeader: React.FC<CleanHeaderProps> = ({
-  onOpenMenu,
-  activeCategoriesCount,
+  onOpenInfo,
   currentLocationName,
-  isTouring
+  isTouring,
+  assistantName,
+  onOpenLocationSelect
 }) => {
-  const [showGreeting, setShowGreeting] = useState(true);
   return (
     <header className="absolute top-3 inset-x-0 z-40 pointer-events-none flex flex-col items-center justify-start px-3 select-none">
       {/* Centered App Header */}
       <div className="relative max-w-xl w-full flex items-center justify-between">
-        {/* Left: Discreet Location / 25km pill */}
+        {/* Left: Location Pill (tipping triggers GPS / Location info) */}
         <div className="pointer-events-auto">
           <button
-            onClick={onOpenMenu}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-900/85 hover:bg-slate-900 text-white backdrop-blur-md border border-white/15 text-xs font-medium shadow-lg transition-all active:scale-95 cursor-pointer group"
-            title="Aufenthaltsort & 25 km Filter anpassen"
+            onClick={onOpenLocationSelect || onOpenInfo}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 text-white backdrop-blur-md border border-white/15 text-xs font-medium shadow-lg transition-all active:scale-95 cursor-pointer group"
+            title="Aktueller Aufenthaltsort"
           >
             <MapPin className="w-3.5 h-3.5 text-cyan-400 group-hover:animate-bounce shrink-0" />
             <span className="truncate max-w-[110px] sm:max-w-[150px] font-semibold text-slate-100">
@@ -41,71 +42,37 @@ export const CleanHeader: React.FC<CleanHeaderProps> = ({
           </button>
         </div>
 
-        {/* Center: Title */}
-        <div className="pointer-events-auto text-center px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 shadow-xl mx-auto">
-          <h1 className="text-xs sm:text-sm md:text-base font-black tracking-tight text-white drop-shadow-md flex items-center justify-center gap-1.5">
-            <span>🇭🇷</span>
-            <span>Kroatien Reisebegleiter</span>
+        {/* Center: App Title */}
+        <div className="pointer-events-auto text-center px-3.5 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-white/10 shadow-xl mx-auto flex items-center gap-1.5">
+          <span className="text-sm">🇭🇷</span>
+          <h1 className="text-xs sm:text-sm font-black tracking-tight text-white drop-shadow-md">
+            Kroatien Reisebegleiter
           </h1>
+          {assistantName && (
+            <span className="hidden sm:inline-block text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/80 font-bold border border-white/15">
+              {assistantName}
+            </span>
+          )}
         </div>
 
-        {/* Right: Sleek Menu Button */}
+        {/* Right: Discreet Info Icon (ℹ️) as requested by Florian */}
         <div className="pointer-events-auto">
           <button
-            onClick={onOpenMenu}
-            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/85 hover:bg-slate-900 text-white backdrop-blur-md border border-white/15 text-xs font-semibold shadow-lg transition-all active:scale-95 cursor-pointer"
-            title="Menü & Filter öffnen"
+            onClick={onOpenInfo}
+            className="relative flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 text-white backdrop-blur-md border border-white/15 text-xs font-semibold shadow-lg transition-all active:scale-95 cursor-pointer group"
+            title="Hilfe, Funktionen & Sprachbefehle"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span className="hidden sm:inline">Menü</span>
-            {activeCategoriesCount > 0 && (
-              <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-cyan-500 text-[10px] font-bold text-slate-950">
-                {activeCategoriesCount}
-              </span>
-            )}
+            <Info className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform shrink-0" />
+            <span className="hidden sm:inline ml-1 font-bold">Hilfe</span>
             {isTouring && (
-              <span className="relative flex h-2 w-2">
+              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
               </span>
             )}
           </button>
         </div>
       </div>
-
-      {/* Prominenter Begrüßungstext in der App-Ansicht (an Stelle des alten Copyrights) */}
-      {showGreeting && (
-        <div className="pointer-events-auto mt-2.5 max-w-xl w-full mx-auto px-1">
-          <div className="relative p-3 sm:p-3.5 rounded-2xl bg-slate-950/92 backdrop-blur-xl border border-cyan-400/40 shadow-2xl text-left overflow-hidden">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shrink-0 shadow-md shadow-cyan-500/20 mt-0.5">
-                  <Sparkles className="w-4 h-4 animate-pulse" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-                    <span>Florian's KI-Assistent</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-400/30">Reisebegleiter 🇭🇷</span>
-                  </p>
-                  <p className="text-xs sm:text-[13px] text-cyan-200 font-medium leading-relaxed">
-                    „Hey, ich bin Florian's KI-Assistent, und bin hier in dieser App euer Reisebegleiter.“
-                  </p>
-                  <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
-                    „Ich bin dafür verantwortlich, euch in jeder Lebenslage beziehungsweise in eurem Urlaub zur Seite zu stehen, damit es euch an nichts fehlt.“
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowGreeting(false)}
-                className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
-                title="Begrüßung schließen"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

@@ -1,4 +1,9 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+interface CapacitorConfig {
+  appId: string;
+  appName: string;
+  webDir: string;
+  bundledWebRuntime?: boolean;
+}
 
 const config: CapacitorConfig = {
   appId: 'de.blindsee.reisebegleiter',

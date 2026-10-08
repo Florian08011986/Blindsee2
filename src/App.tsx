@@ -23,8 +23,10 @@ import {
   Sparkles
 } from 'lucide-react';
 import { CleanHeader } from './components/CleanHeader';
-import { CleanDrawerMenu } from './components/CleanDrawerMenu';
 import { GeminiBottomChat } from './components/GeminiBottomChat';
+import { BlackScreenIntro } from './components/BlackScreenIntro';
+import { HelpGuideModal } from './components/HelpGuideModal';
+import { PacklistWidget } from './components/PacklistWidget';
 import { ALL_CROATIA_POIS, getPoisInRadius } from './croatiaLocations';
 import {
   Landmark,
@@ -77,6 +79,34 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isLocating, setIsLocating] = useState<boolean>(false);
 
+  // User Profile & Assistant Customization
+  const [userName, setUserName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kroatien_user_name') || 'Florian';
+    } catch {
+      return 'Florian';
+    }
+  });
+
+  const [assistantName, setAssistantName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kroatien_assistant_name') || 'Luka';
+    } catch {
+      return 'Luka';
+    }
+  });
+
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('kroatien_intro_completed') !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
+  const [showPacklist, setShowPacklist] = useState<boolean>(false);
+
   // =========================================================================
   // 2. POIs IM 25 KM RADIUS BERECHNEN
   // =========================================================================
@@ -118,6 +148,7 @@ export default function App() {
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
   const [keyInputValue, setKeyInputValue] = useState<string>('');
   const [geminiKeyInput, setGeminiKeyInput] = useState<string>('');
+  const [hasGeminiKey, setHasGeminiKey] = useState<boolean>(() => Boolean(getStoredGeminiKey()));
   const [mapsLoaded, setMapsLoaded] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -195,6 +226,54 @@ export default function App() {
       }
     }
   }, []);
+
+  const handleFlyToNamedPlace = useCallback(
+    (placeName: string) => {
+      const q = placeName.toLowerCase().trim();
+      if (!q) return;
+
+      const found = ALL_CROATIA_POIS.find(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.id.toLowerCase().includes(q) ||
+          (p.description && p.description.toLowerCase().includes(q))
+      );
+
+      if (found) {
+        flyToPoi3D(found);
+        return;
+      }
+
+      // Famous fallback hubs across Croatia
+      const hubList = [
+        { key: 'dubrovnik', name: 'Dubrovnik (Altstadt)', lat: 42.6412, lng: 18.1084, range: 450, tilt: 55, heading: 140 },
+        { key: 'split', name: 'Split (Diokletianpalast)', lat: 43.5081, lng: 16.4402, range: 450, tilt: 55, heading: 120 },
+        { key: 'rovinj', name: 'Rovinj (Istrien)', lat: 45.0812, lng: 13.6387, range: 450, tilt: 55, heading: 90 },
+        { key: 'zadar', name: 'Zadar (Meeresorgel)', lat: 44.1174, lng: 15.2201, range: 450, tilt: 55, heading: 150 },
+        { key: 'pula', name: 'Pula (Amphitheater)', lat: 44.8732, lng: 13.8502, range: 450, tilt: 55, heading: 110 },
+        { key: 'krka', name: 'Krka-Wasserfälle', lat: 43.8049, lng: 15.9644, range: 500, tilt: 60, heading: 45 },
+        { key: 'zagreb', name: 'Zagreb (Hauptstadt)', lat: 45.815, lng: 15.9819, range: 550, tilt: 50, heading: 0 },
+        { key: 'hvar', name: 'Insel Hvar', lat: 43.1725, lng: 16.4428, range: 500, tilt: 55, heading: 110 },
+        { key: 'korcula', name: 'Insel Korčula', lat: 42.9602, lng: 17.1356, range: 480, tilt: 55, heading: 130 }
+      ];
+
+      const matchedHub = hubList.find((h) => q.includes(h.key));
+      if (matchedHub) {
+        flyToPoi3D({
+          id: `fly-${matchedHub.key}`,
+          name: matchedHub.name,
+          lat: matchedHub.lat,
+          lng: matchedHub.lng,
+          category: 'Städte',
+          description: `3D-Flugziel in Kroatien: ${matchedHub.name}`,
+          camRange: matchedHub.range,
+          camTilt: matchedHub.tilt,
+          camHeading: matchedHub.heading
+        });
+      }
+    },
+    [flyToPoi3D]
+  );
 
   // Subtle Welcome Coastline Flight across Croatia
   const runWelcomeCoastalFlight = useCallback(() => {
@@ -558,54 +637,77 @@ export default function App() {
         </div>
       </main>
 
-      {/* 2. CENTERED APP HEADER WITH FLORIAN FINKE COPYRIGHT */}
+      {/* 2. CENTERED APP HEADER WITH DISCREET INFO (ℹ️) BUTTON */}
       <CleanHeader
-        onOpenMenu={() => setIsMenuOpen(true)}
-        activeCategoriesCount={activeCategories.length}
+        onOpenInfo={() => setShowHelpModal(true)}
         currentLocationName={currentLocation.name}
         isTouring={isTouring}
+        assistantName={assistantName}
       />
 
-      {/* 3. HIDDEN MENU DRAWER (AUFENTHALTSORT, 25 KM FILTER, TOURENPLANER) */}
-      <CleanDrawerMenu
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        currentLocationName={currentLocation.name}
-        onSelectHub={handleSelectHub}
-        onUseGeolocation={handleUseGeolocation}
-        isLocating={isLocating}
-        radiusKm={radiusKm}
-        onRadiusChange={(r) => setRadiusKm(r)}
-        activeCategories={activeCategories}
-        onToggleCategory={handleToggleCategory}
-        onSelectAllCategories={handleSelectAllCategories}
-        onClearCategories={handleClearCategories}
-        categoryCounts={categoryCounts}
-        tourStops={tourStops}
-        onAddTourStop={handleAddToTour}
-        onRemoveTourStop={handleRemoveTourStop}
-        onClearTour={handleClearTour}
-        onStartTour3D={startTour3D}
-        allNearbyPois={allInRadius}
-        onFlyToPoi={(poi) => flyToPoi3D(poi)}
-        mapMode={mapMode}
-        onMapModeChange={(mode) => setMapMode(mode)}
-        onOpenApiKeyModal={() => setShowApiKeyModal(true)}
-      />
-
-      {/* 4. GEMINI CHAT TEXT INPUT BAR WITH PLUS (+) PROMPTS */}
+      {/* 3. GEMINI CONVERSATIONAL TRAVEL COMPANION (100% Conversational Agency) */}
       <GeminiBottomChat
         currentLocationName={currentLocation.name}
         currentLocationCoords={{ lat: currentLocation.lat, lng: currentLocation.lng }}
         activeLandmark={activeLandmark}
+        userName={userName}
+        assistantName={assistantName}
         onClearActiveLandmark={() => setActiveLandmark(null)}
         onFlyToLandmark={(landmark) => flyToPoi3D(landmark)}
+        onFlyToNamedPlace={handleFlyToNamedPlace}
         onAddToTour={(landmark) => handleAddToTour(landmark)}
         onActivateCategory={(catName) => {
           if (!activeCategories.includes(catName)) {
             setActiveCategories((prev) => [...prev, catName]);
           }
         }}
+        onOpenPacklist={() => setShowPacklist(true)}
+        onSetMapMode={(mode) => setMapMode(mode)}
+        onStartTour={startTour3D}
+      />
+
+      {/* 4. BLACK SCREEN INTRO / CINEMATIC ONBOARDING (Strahlend weiß auf Tiefschwarz) */}
+      <BlackScreenIntro
+        isOpen={showIntro}
+        onComplete={(newUserName, newAssistantName) => {
+          setUserName(newUserName);
+          setAssistantName(newAssistantName);
+          setShowIntro(false);
+          try {
+            localStorage.setItem('kroatien_user_name', newUserName);
+            localStorage.setItem('kroatien_assistant_name', newAssistantName);
+            localStorage.setItem('kroatien_intro_completed', 'true');
+          } catch {}
+        }}
+        initialUserName={userName}
+        initialAssistantName={assistantName}
+      />
+
+      {/* 5. HELP & COMMAND GUIDE MODAL (Diskretes ℹ️ Info-Icon) */}
+      <HelpGuideModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        userName={userName}
+        assistantName={assistantName}
+        onRestartIntro={() => {
+          setShowHelpModal(false);
+          setShowIntro(true);
+        }}
+        onOpenApiKeyModal={() => {
+          setShowHelpModal(false);
+          setShowApiKeyModal(true);
+        }}
+        onOpenPacklist={() => {
+          setShowHelpModal(false);
+          setShowPacklist(true);
+        }}
+      />
+
+      {/* 6. INTERAKTIVES PACKLISTEN-WIDGET FÜR KROATIEN */}
+      <PacklistWidget
+        isOpen={showPacklist}
+        onClose={() => setShowPacklist(false)}
+        assistantName={assistantName}
       />
 
       {/* 5. API KEY MODAL */}

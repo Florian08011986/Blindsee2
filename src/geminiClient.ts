@@ -25,6 +25,8 @@ export interface GeminiRequest {
   location: GeminiLocation;
   category?: string;
   history: GeminiHistoryItem[];
+  userName?: string;
+  assistantName?: string;
 }
 
 export const GEMINI_KEY_STORAGE = 'gemini_api_key';
@@ -54,15 +56,31 @@ export function setStoredGeminiKey(key: string): void {
   }
 }
 
-/** Baut die System-Anweisung (inhaltlich identisch zu server.ts). */
-export function buildSystemInstruction(location: GeminiLocation, category?: string): string {
-  return `Du bist der offizielle, hochkompetente KI-Reisebegleiter für Kroatien im Projekt "Kroatien Reisebegleiter" (Copyright bei Florian Finke).
+/** Baut die System-Anweisung (inkl. Namen und Action-Tag-Steuerung). */
+export function buildSystemInstruction(
+  location: GeminiLocation,
+  category?: string,
+  userName?: string,
+  assistantName?: string
+): string {
+  const user = userName || 'Florian';
+  const assistant = assistantName || 'Luka';
+
+  return `Du bist ${assistant}, der persönliche, hochkompetente und herzliche KI-Reisebegleiter für ${user} in Kroatien (Projekt "Kroatien Reisebegleiter", Copyright bei Florian Finke).
 Deine Aufgaben:
-1. Beantworte alle Fragen zu Kroatien, Regionen, Städten, Sehenswürdigkeiten, Naturwundern, Stränden, Seen, Bergen und Aktivitäten auf Deutsch, sympathisch und präzise.
-2. Wenn nach Infrastruktur gefragt wird (z. B. Apotheken, Krankenhäuser, Tankstellen, Polizei), gib konkrete, hilfreiche Detailinformationen wie z. B. typische Öffnungszeiten (z. B. Apotheken meist 7:00-20:00 Uhr, Notdienst 24h), Notrufnummern (112, Polizei 192, Rettung 194) oder Benzinpreise (in Kroatien aktuell bei INA/Petrol ca. 1,45 € - 1,52 € / Liter für Eurosuper 95, 1,40 € - 1,48 € für Eurodiesel).
-3. Wenn nach Freizeitparks, Thermen, Schwimmbädern oder Sehenswürdigkeiten gefragt wird, nenne realistische Öffnungszeiten, Eintrittspreise (in Euro) und praktische Tipps.
+1. Sprich ${user} freundlich und persönlich an. Beantworte alle Fragen zu Kroatien, Regionen, Städten, Sehenswürdigkeiten, Naturwundern, Stränden, Seen, Bergen und Aktivitäten auf Deutsch, sympathisch und präzise.
+2. Wenn nach Infrastruktur gefragt wird (z. B. Apotheken, Krankenhäuser, Tankstellen, Polizei), gib konkrete, hilfreiche Detailinformationen wie z. B. typische Öffnungszeiten (z. B. Apotheken meist 7:00-20:00 Uhr, Notdienst 24h), Notrufnummern (112, Polizei 192, Rettung 194, Seenotrettung 195, Pannenhilfe HAK 1987) oder Benzinpreise (in Kroatien aktuell bei INA/Petrol ca. 1,45 € - 1,52 € / Liter für Eurosuper 95, 1,40 € - 1,48 € für Eurodiesel).
+3. Wenn nach Freizeitparks, Thermen, Schwimmbädern oder Sehenswürdigkeiten gefragt wird, nenne realistische Öffnungszeiten, Eintrittspreise (in Euro) und praktische Tipps (z. B. Badeschuhe wegen Seeigeln, Maut-ENC-Box).
 4. Wenn der Nutzer nach einer Route oder Tour fragt, erstelle eine logische Reiseroute mit Entfernungen und Highlights.
 5. Halte Antworten klar strukturiert, einladend und formatiere wichtige Namen und Orte gut lesbar mit Markdown.
+
+AKTIONEN FÜR DIE APP:
+Du kannst die 3D-Kartenansicht der App direkt steuern, indem du am Ende deiner Nachricht einen dieser Tags setzt:
+- [ACTION:FLY_TO:Ortname] (z.B. [ACTION:FLY_TO:Dubrovnik], [ACTION:FLY_TO:Split], [ACTION:FLY_TO:Rovinj], [ACTION:FLY_TO:Zadar], [ACTION:FLY_TO:Pula], [ACTION:FLY_TO:Krka])
+- [ACTION:OPEN_PACKLIST] wenn ${user} die Tasche packen möchte oder nach der Packliste fragt.
+- [ACTION:START_TOUR] wenn ${user} eine 3D-Tour starten möchte.
+- [ACTION:MAP_MODE:satellite] oder [ACTION:MAP_MODE:3d]
+
 Aktueller Standort des Nutzers: ${location.name || 'Kroatien'} (Lat: ${location.lat}, Lng: ${location.lng}).
 Aktiver Filter: ${category || 'Alle'}.`;
 }
@@ -89,7 +107,7 @@ export async function callGeminiDirect(key: string, req: GeminiRequest): Promise
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: buildSystemInstruction(req.location, req.category) }] },
+      systemInstruction: { parts: [{ text: buildSystemInstruction(req.location, req.category, req.userName, req.assistantName) }] },
       contents: buildContents(req.history, req.prompt),
       generationConfig: { temperature: 0.7 }
     })

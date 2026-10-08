@@ -21,7 +21,9 @@ import {
   BookOpen,
   Route,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Luggage,
+  Navigation
 } from 'lucide-react';
 import { Landmark } from '../utils';
 import { askGemini } from '../geminiClient';
@@ -33,9 +35,17 @@ interface PredefinedAction {
   glyph: string;
   prompt: string;
   categoryToActivate?: string;
+  isPacklistAction?: boolean;
 }
 
 export const PREDEFINED_ACTIONS: PredefinedAction[] = [
+  {
+    id: 'packliste',
+    label: 'Kroatien-Packliste öffnen & prüfen',
+    glyph: '🎒',
+    prompt: 'Lass uns die Packliste für den Kroatien-Urlaub durchgehen (Badeschuhe gegen Seeigel, Mautbox, Unterlagen).',
+    isPacklistAction: true
+  },
   {
     id: 'sehenswuerdigkeiten',
     label: 'Sehenswürdigkeiten im 25 km Umkreis anzeigen',
@@ -49,6 +59,13 @@ export const PREDEFINED_ACTIONS: PredefinedAction[] = [
     glyph: '🎡',
     prompt: 'Welche Attraktionen, Panoramablicke und Highlights gibt es im Umkreis von 25 km?',
     categoryToActivate: 'Attraktionen'
+  },
+  {
+    id: 'straende',
+    label: 'Schöne Strände & Felsbuchten finden',
+    glyph: '🏖️',
+    prompt: 'Welche Strände (Kies, Sand oder Felsbuchten) sind im 25 km Umkreis am schönsten?',
+    categoryToActivate: 'Strände'
   },
   {
     id: 'seen',
@@ -65,15 +82,8 @@ export const PREDEFINED_ACTIONS: PredefinedAction[] = [
     categoryToActivate: 'Berge'
   },
   {
-    id: 'straende',
-    label: 'Schöne Strände in der Nähe finden',
-    glyph: '🏖️',
-    prompt: 'Welche Strände (Kies, Sand oder Felsbuchten) sind im 25 km Umkreis am schönsten?',
-    categoryToActivate: 'Strände'
-  },
-  {
     id: 'tankstelle',
-    label: 'Tankstelle finden (mit aktuellen Benzinpreisen)',
+    label: 'Tankstelle finden (mit aktuellen Spritpreisen)',
     glyph: '⛽',
     prompt: 'Finde die nächste Tankstelle mit aktuellen Benzinpreisen (Super 95, Diesel) und 24h-Service.',
     categoryToActivate: 'Tankstellen'
@@ -93,37 +103,10 @@ export const PREDEFINED_ACTIONS: PredefinedAction[] = [
     categoryToActivate: 'Apotheken'
   },
   {
-    id: 'polizei',
-    label: 'Polizeirevier in der Nähe finden',
-    glyph: '👮',
-    prompt: 'Wo befindet sich die zuständige Polizeidienststelle mit Notruf 192?',
-    categoryToActivate: 'Polizeireviere'
-  },
-  {
-    id: 'thermen',
-    label: 'Thermen & Schwimmbäder (mit Preisen & Öffnungszeiten)',
-    glyph: '🏊',
-    prompt: 'Welche Hallenbäder, Thermalbäder oder Schwimmbäder gibt es in der Region inklusive Eintrittspreisen und Öffnungszeiten?',
-    categoryToActivate: 'Schwimmbäder & Thermen'
-  },
-  {
-    id: 'freizeitparks',
-    label: 'Freizeitparks & Attraktionen für Kinder (Preise & Zeiten)',
-    glyph: '🎢',
-    prompt: 'Welche Freizeitparks, Aquaparks oder Erlebnisse für Kinder gibt es hier mit Eintrittspreisen und Öffnungszeiten?',
-    categoryToActivate: 'Freizeitparks'
-  },
-  {
-    id: 'erzaehlung',
-    label: 'Spannende Geschichten & Details zu diesem Ort erzählen',
-    glyph: '📖',
-    prompt: 'Erzähle mir eine spannende, historische Geschichte und Insidertipps zu unserem aktuellen Aufenthaltsort in Kroatien.'
-  },
-  {
     id: 'tour-plan',
-    label: 'Plane eine abwechslungsreiche Tagestour für mich',
+    label: '3D-Tour durch historische Altstadt starten',
     glyph: '🗺️',
-    prompt: 'Plane mir eine logische Tagestour mit 3 bis 4 Stationen (Kultur, Natur, Baden und Gastronomie) in dieser Region.'
+    prompt: 'Starte eine geführte 3D-Tour für mich durch die Altstadt!'
   }
 ];
 
@@ -132,38 +115,54 @@ interface ChatMessage {
   sender: 'user' | 'gemini';
   text: string;
   timestamp: string;
+  actionExecuted?: string;
 }
 
 interface GeminiBottomChatProps {
   currentLocationName: string;
   currentLocationCoords: { lat: number; lng: number };
   activeLandmark: Landmark | null;
+  userName: string;
+  assistantName: string;
   onClearActiveLandmark: () => void;
   onFlyToLandmark: (landmark: Landmark) => void;
+  onFlyToNamedPlace: (placeName: string) => void;
   onAddToTour: (landmark: Landmark) => void;
   onActivateCategory: (categoryName: string) => void;
+  onOpenPacklist: () => void;
+  onSetMapMode: (mode: '3d' | 'satellite') => void;
+  onStartTour: () => void;
 }
 
 export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   currentLocationName,
   currentLocationCoords,
   activeLandmark,
+  userName,
+  assistantName,
   onClearActiveLandmark,
   onFlyToLandmark,
+  onFlyToNamedPlace,
   onAddToTour,
-  onActivateCategory
+  onActivateCategory,
+  onOpenPacklist,
+  onSetMapMode,
+  onStartTour
 }) => {
   const [inputText, setInputText] = useState('');
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
+  const [showProactiveBanner, setShowProactiveBanner] = useState(true);
+
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => [
     {
       id: 'welcome-intro-msg',
-      sender: 'bot',
-      text: "Hey, ich bin Florian's KI-Assistent, und bin hier in dieser App euer Reisebegleiter. 🇭🇷✨\n\nIch bin dafür verantwortlich, euch in jeder Lebenslage beziehungsweise in eurem Urlaub zur Seite zu stehen, damit es euch an nichts fehlt.",
+      sender: 'gemini',
+      text: `Hey ${userName || 'Florian'}! Ich bin ${assistantName || 'Luka'}, dein persönlicher Reisebegleiter für Kroatien. 🇭🇷✨\n\nFrag mich jederzeit nach 3D-Flügen, Stränden, Restaurants oder Notfall-Infrastruktur – oder sag mir einfach, wo du hin möchtest!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
+
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
   const [isDetailCardFolded, setIsDetailCardFolded] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -176,10 +175,60 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     }
   }, [chatHistory, isChatOverlayOpen]);
 
+  // Execute Action-Tags embedded in Gemini replies
+  const processActionTags = (rawText: string): { cleanText: string; executedAction?: string } => {
+    let cleanText = rawText;
+    let executedAction: string | undefined;
+
+    // 1. Packliste öffnen
+    if (/\[ACTION:OPEN_PACKLIST\]/i.test(cleanText)) {
+      cleanText = cleanText.replace(/\[ACTION:OPEN_PACKLIST\]/gi, '').trim();
+      onOpenPacklist();
+      executedAction = '🎒 Packliste geöffnet';
+    }
+
+    // 2. 3D-Kameraflug zu Ort
+    const flyMatch = cleanText.match(/\[ACTION:FLY_TO:(.*?)\]/i);
+    if (flyMatch) {
+      const place = flyMatch[1].trim();
+      cleanText = cleanText.replace(/\[ACTION:FLY_TO:(.*?)\]/gi, '').trim();
+      onFlyToNamedPlace(place);
+      executedAction = `🦅 3D-Flug zu ${place}`;
+    }
+
+    // 3. Tour starten
+    if (/\[ACTION:START_TOUR\]/i.test(cleanText)) {
+      cleanText = cleanText.replace(/\[ACTION:START_TOUR\]/gi, '').trim();
+      onStartTour();
+      executedAction = '🚗 3D-Tour gestartet';
+    }
+
+    // 4. Map-Mode umschalten
+    const modeMatch = cleanText.match(/\[ACTION:MAP_MODE:(.*?)\]/i);
+    if (modeMatch) {
+      const mode = modeMatch[1].trim().toLowerCase();
+      cleanText = cleanText.replace(/\[ACTION:MAP_MODE:(.*?)\]/gi, '').trim();
+      if (mode.includes('sat')) {
+        onSetMapMode('satellite');
+        executedAction = '🛰️ Auf Satellitenmodus umgeschaltet';
+      } else {
+        onSetMapMode('3d');
+        executedAction = '🌐 Auf 3D-Modus umgeschaltet';
+      }
+    }
+
+    return { cleanText, executedAction };
+  };
+
   // Send prompt to Gemini backend
   const handleSendPrompt = async (promptToSend: string) => {
     const trimmed = promptToSend.trim();
     if (!trimmed || isLoading) return;
+
+    // Fast-path client intercept for packing list
+    if (trimmed.toLowerCase().includes('packliste') && (trimmed.toLowerCase().includes('öffnen') || trimmed.toLowerCase().includes('anzeigen') || trimmed.toLowerCase() === 'packliste')) {
+      onOpenPacklist();
+    }
 
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -195,7 +244,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
     setIsLoading(true);
 
     try {
-      const replyText =
+      const replyRaw =
         (await askGemini({
           prompt: trimmed,
           location: {
@@ -203,17 +252,22 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
             lat: currentLocationCoords.lat,
             lng: currentLocationCoords.lng
           },
+          userName,
+          assistantName,
           history: chatHistory.slice(-4).map((m) => ({
             role: m.sender === 'user' ? ('user' as const) : ('model' as const),
             text: m.text
           }))
         })) || 'Antwort konnte nicht geladen werden.';
 
+      const { cleanText, executedAction } = processActionTags(replyRaw);
+
       const geminiMessage: ChatMessage = {
         id: `reply-${Date.now()}`,
         sender: 'gemini',
-        text: replyText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        text: cleanText,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        actionExecuted: executedAction
       };
 
       setChatHistory((prev) => [...prev, geminiMessage]);
@@ -231,6 +285,9 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   };
 
   const handleSelectPredefined = (action: PredefinedAction) => {
+    if (action.isPacklistAction) {
+      onOpenPacklist();
+    }
     if (action.categoryToActivate) {
       onActivateCategory(action.categoryToActivate);
     }
@@ -246,6 +303,51 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
   return (
     <div className="absolute bottom-3 inset-x-0 z-40 pointer-events-none flex flex-col items-center justify-end px-3 select-none">
       <div className="w-full max-w-xl flex flex-col items-stretch space-y-2">
+        {/* PROAKTIVER URLAUBS-COUNTDOWN & PACKLISTEN-ANSTOSS */}
+        <AnimatePresence>
+          {showProactiveBanner && !isChatOverlayOpen && !activeLandmark && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="pointer-events-auto p-3 rounded-2xl bg-slate-950/92 backdrop-blur-xl border border-cyan-400/40 shadow-2xl flex items-center justify-between gap-3 text-left"
+            >
+              <div className="flex items-start gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shrink-0 mt-0.5">
+                  <Luggage className="w-4 h-4 animate-bounce" />
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>Noch exakt 48 Stunden bis zum Abflug! 🇭🇷</span>
+                  </p>
+                  <p className="text-[11px] text-slate-300 leading-snug line-clamp-2">
+                    Florian hat mir deine Kroatien-Packliste übergeben. Wollen wir deine Tasche zusammen packen?
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => {
+                    onOpenPacklist();
+                    setShowProactiveBanner(false);
+                  }}
+                  className="px-3 py-1.5 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md active:scale-95 cursor-pointer"
+                >
+                  Ja, packen!
+                </button>
+                <button
+                  onClick={() => setShowProactiveBanner(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                  title="Später"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* ACTIVE POI DETAIL CARD (Docks directly above bottom input) */}
         <AnimatePresence>
           {activeLandmark && (
@@ -294,7 +396,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
                 </div>
               </div>
 
-              {/* Expandable Details (Prices, Opening hours, Petrol, Highlights) */}
+              {/* Expandable Details */}
               {!isDetailCardFolded && (
                 <div className="space-y-2 text-xs pt-1 border-t border-white/10">
                   <p className="text-[11px] text-slate-300 leading-relaxed max-h-[60px] overflow-y-auto scrollbar-thin">
@@ -316,7 +418,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
                       <div className="flex items-start gap-1.5 p-1.5 rounded-lg bg-white/5 text-slate-300">
                         <Euro className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-semibold block text-white">Preise & Eintritt:</span>
+                          <span className="font-semibold block text-white">Preise &amp; Eintritt:</span>
                           <span>{activeLandmark.prices}</span>
                         </div>
                       </div>
@@ -349,34 +451,20 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
                     )}
                   </div>
 
-                  {/* Actions for this Landmark */}
-                  <div className="flex items-center gap-1.5 pt-1">
+                  <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => onFlyToLandmark(activeLandmark)}
-                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md"
+                      className="flex-1 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md active:scale-95 transition-all"
                     >
-                      <Play className="w-3 h-3 fill-white" />
-                      <span>Im 3D-Flug ranzoomen</span>
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>3D-Flug starten</span>
                     </button>
-
                     <button
                       onClick={() => onAddToTour(activeLandmark)}
-                      className="py-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Route className="w-3.5 h-3.5" />
                       <span>Zur Tour</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        handleSendPrompt(
-                          `Erzähle mir spannende Geschichten, Hintergrundwissen und Insidertipps zu ${activeLandmark.name}.`
-                        );
-                      }}
-                      className="py-1.5 px-2.5 rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <BookOpen className="w-3 h-3" />
-                      <span>KI-Erzähler</span>
                     </button>
                   </div>
                 </div>
@@ -385,61 +473,94 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
           )}
         </AnimatePresence>
 
-        {/* CHAT MESSAGES MODAL / OVERLAY */}
+        {/* EXPANDABLE CHAT OVERLAY WINDOW */}
         <AnimatePresence>
           {isChatOverlayOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.98 }}
-              className="pointer-events-auto rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/15 shadow-2xl p-3 flex flex-col max-h-[300px] sm:max-h-[360px]"
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ duration: 0.25 }}
+              className="pointer-events-auto rounded-3xl bg-slate-950/96 text-white backdrop-blur-2xl border border-white/20 shadow-2xl flex flex-col max-h-[58vh] sm:max-h-[64vh] overflow-hidden"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
-                  <span className="font-bold text-xs text-white">Gemini Kroatien-Reisebegleiter</span>
+              {/* Chat Header */}
+              <div className="p-3.5 border-b border-white/10 flex items-center justify-between bg-slate-900/60 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 shadow-md">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
+                      <span>{assistantName}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-400/30">
+                        Dein Begleiter
+                      </span>
+                    </h3>
+                    <p className="text-[10px] text-slate-400">
+                      Standort: {currentLocationName} (±25 km)
+                    </p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setIsChatOverlayOpen(false)}
-                  className="p-1 rounded-md text-slate-400 hover:text-white cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onOpenPacklist()}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 text-xs flex items-center gap-1 cursor-pointer mr-1"
+                    title="Packliste öffnen"
+                  >
+                    <Luggage className="w-3.5 h-3.5" />
+                    <span className="text-[11px] hidden sm:inline">Packliste</span>
+                  </button>
+                  <button
+                    onClick={() => setIsChatOverlayOpen(false)}
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                    title="Chat minimieren"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              <div ref={chatScrollRef} className="flex-1 overflow-y-auto py-2 space-y-2.5 scrollbar-thin">
-                {chatHistory.length === 0 ? (
-                  <p className="text-center text-slate-400 text-xs py-4">
-                    Stelle eine Frage oder wähle eine Aktion über das Plus (+) links unten!
-                  </p>
-                ) : (
-                  chatHistory.map((msg) => (
+              {/* Chat Messages Log */}
+              <div
+                ref={chatScrollRef}
+                className="flex-1 p-3.5 overflow-y-auto space-y-3 scrollbar-thin select-text text-left"
+              >
+                {chatHistory.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${
+                      msg.sender === 'user' ? 'items-end' : 'items-start'
+                    }`}
+                  >
                     <div
-                      key={msg.id}
-                      className={`flex flex-col ${
-                        msg.sender === 'user' ? 'items-end' : 'items-start'
+                      className={`max-w-[88%] p-3 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                        msg.sender === 'user'
+                          ? 'bg-cyan-600 text-white rounded-br-xs'
+                          : 'bg-white/10 text-slate-100 rounded-bl-xs border border-white/10'
                       }`}
                     >
-                      <div
-                        className={`max-w-[88%] p-2.5 rounded-2xl text-xs leading-relaxed ${
-                          msg.sender === 'user'
-                            ? 'bg-cyan-600 text-white rounded-br-xs'
-                            : 'bg-white/10 text-slate-100 rounded-bl-xs border border-white/10'
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap">{msg.sender === 'gemini' ? renderChatMarkdown(msg.text) : msg.text}</p>
-                      </div>
-                      <span className="text-[9px] text-slate-400 px-1 mt-0.5">
-                        {msg.timestamp}
-                      </span>
+                      <p className="whitespace-pre-wrap">
+                        {msg.sender === 'gemini' ? renderChatMarkdown(msg.text) : msg.text}
+                      </p>
+
+                      {msg.actionExecuted && (
+                        <div className="mt-2 pt-2 border-t border-white/15 flex items-center gap-1.5 text-[11px] text-cyan-300 font-semibold">
+                          <Sparkles className="w-3 h-3 text-cyan-300" />
+                          <span>{msg.actionExecuted}</span>
+                        </div>
+                      )}
                     </div>
-                  ))
-                )}
+                    <span className="text-[9px] text-slate-400 px-1 mt-0.5">
+                      {msg.timestamp}
+                    </span>
+                  </div>
+                ))}
 
                 {isLoading && (
                   <div className="flex items-center gap-2 text-xs text-cyan-300 py-1">
                     <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                    <span>Gemini recherchiert für dich...</span>
+                    <span>{assistantName} recherchiert für dich...</span>
                   </div>
                 )}
               </div>
@@ -454,18 +575,18 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
               initial={{ opacity: 0, y: 10, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.96 }}
-              className="pointer-events-auto rounded-2xl bg-slate-900/98 backdrop-blur-xl border border-white/15 shadow-2xl p-2 max-h-[320px] overflow-y-auto scrollbar-thin space-y-1"
+              className="pointer-events-auto rounded-3xl bg-slate-900/98 backdrop-blur-xl border border-white/15 shadow-2xl p-2 max-h-[320px] overflow-y-auto scrollbar-thin space-y-1"
             >
-              <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-cyan-400 border-b border-white/10 mb-1 flex items-center justify-between">
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400 border-b border-white/10 mb-1 flex items-center justify-between">
                 <span>Vordefinierte Reisefunktionen</span>
-                <span className="text-slate-400 font-normal">Als Prompt maskiert</span>
+                <span className="text-slate-400 font-normal">Per Klick ausführen</span>
               </div>
 
               {PREDEFINED_ACTIONS.map((act) => (
                 <button
                   key={act.id}
                   onClick={() => handleSelectPredefined(act)}
-                  className="w-full px-2.5 py-1.5 rounded-xl hover:bg-white/10 text-left text-xs transition-colors flex items-center gap-2.5 cursor-pointer text-slate-200 hover:text-white"
+                  className="w-full px-3 py-2 rounded-xl hover:bg-white/10 text-left text-xs transition-colors flex items-center gap-2.5 cursor-pointer text-slate-200 hover:text-white"
                 >
                   <span className="text-base shrink-0">{act.glyph}</span>
                   <span className="truncate font-medium">{act.label}</span>
@@ -476,7 +597,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
         </AnimatePresence>
 
         {/* THE MAIN BOTTOM CHAT INPUT BAR */}
-        <div className="pointer-events-auto w-full p-1.5 rounded-full bg-slate-900/90 hover:bg-slate-900/95 backdrop-blur-xl border border-white/15 shadow-2xl flex items-center gap-1.5 transition-all">
+        <div className="pointer-events-auto w-full p-1.5 rounded-full bg-slate-950/90 hover:bg-slate-950/95 backdrop-blur-xl border border-white/20 shadow-2xl flex items-center gap-1.5 transition-all">
           {/* Plus Button */}
           <button
             onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
@@ -490,7 +611,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
             <Plus className="w-5 h-5 stroke-[2.5]" />
           </button>
 
-          {/* Text Input */}
+          {/* Text Input with dynamic placeholder */}
           <input
             ref={inputRef}
             type="text"
@@ -501,7 +622,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
                 handleSendPrompt(inputText);
               }
             }}
-            placeholder="Frag deinen Kroatien-Reisebegleiter oder nutze das Plus (+)..."
+            placeholder={`Frag ${assistantName}... (z. B. „Flieg nach Split“)`}
             className="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm text-white placeholder-slate-400 px-2 min-w-0"
           />
 
@@ -514,7 +635,7 @@ export const GeminiBottomChat: React.FC<GeminiBottomChatProps> = ({
                 ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-md active:scale-95'
                 : 'bg-white/5 text-slate-500 cursor-not-allowed'
             }`}
-            title="Nachricht an Gemini senden"
+            title={`Nachricht an ${assistantName} senden`}
           >
             <Send className="w-4 h-4" />
           </button>
